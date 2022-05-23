@@ -29,12 +29,20 @@ void PlayerLoadCharacter(Player& self, const char* filename)
 			self.ent.vVel = atof(val);
 		else if (!strcmp(temp, "hp"))
 			self.currHP = self.maxHP = atof(val);
+		else if (!strcmp(temp, "prbasespd"))
+			self.projBaseSpd = atof(val);
 		else if (!strcmp(temp, "attackcd"))
 			self.attackCD = self.currAttCD = atof(val) * 1000.0f;
 		else if (!strcmp(temp, "attackdur"))
 			self.attackDur = self.currAttDur = atof(val) * 1000.0f;
-		else if (!strcmp(temp, "prbasespd"))
-			self.projBaseSpd = atof(val);
+		else if (!strcmp(temp, "parrycd"))
+			self.parryCD = self.currParrCD = atof(val) * 1000.0f;
+		else if (!strcmp(temp, "parrydur"))
+			self.parryDur = self.currParrDur = atof(val) * 1000.0f;
+		else if (!strcmp(temp, "evadecd"))
+			self.evadeCD = self.currEvadeCD = atof(val) * 1000.0f;
+		else if (!strcmp(temp, "evadedur"))
+			self.evadeDur = self.currEvadeDur = atof(val) * 1000.0f;
 	}
 	fclose(file);
 }
@@ -43,12 +51,22 @@ void PlayerInput(Player& self)
 {
 	if (self.ent.isMoving = kbState[self.ctrls.left] + kbState[self.ctrls.right] == 1)
 		self.ent.dir = -kbState[self.ctrls.left] + kbState[self.ctrls.right];
+
 	if (OnPress(self.ctrls.jump) && !self.ent.isInAir)
 		self.ent.verMS = -self.ent.vVel * 17;
+
 	if (OnPress(self.ctrls.attack))
 		self.isAttacking = self.canAttack;
+
+	if (OnPress(self.ctrls.parry))
+		self.isParrying = self.canParry;
+
+	if (OnPress(self.ctrls.evade))
+		self.isEvading = self.canEvade;
+
 	if (OnPress(self.ctrls.thrw))
-		self.isThrowing = !self.isAttacking;
+		self.isThrowing = !self.isEvading && !self.isAttacking && !self.isParrying;
+
 	if (!self.dismountLock)
 		self.isDismounting = kbState[self.ctrls.dismount];
 }
@@ -92,11 +110,12 @@ void PlayerPlatformHorCollision(Player& self, Platform& platform)
 	return;
 }
 
+// TODO: attack parry and evasion aren't dependant, can penalted
 void PlayerAttack(Player& self)
 {
 	if (!self.isAttacking && self.canAttack)
 		return;
-	self.canAttack = false;
+	self.canAttack = self.canEvade = self.canParry = false;
 	if (self.isAttacking)
 	{
 		self.currAttDur -= FRAME_DELAY;
@@ -104,23 +123,67 @@ void PlayerAttack(Player& self)
 		{
 			self.attackBox.x = self.ent.rect.x + (self.ent.dir == 1 ? self.ent.rect.w : -self.attackBox.w);
 			self.attackBox.y = self.ent.pos.y;
-		}
-		else
-		{
-			self.isAttacking = false;
-			self.currAttCD -= FRAME_DELAY;
+			return;
 		}
 	}
-	else 
+	self.isAttacking = false;
+	self.canEvade = self.canParry = true;
+	self.currAttCD -= FRAME_DELAY;
+	if (self.currAttCD > 0)
+		return;
+	self.currAttCD = self.attackCD;
+	self.currAttDur = self.attackDur;
+	self.canAttack = true;
+}
+
+void PlayerParry(Player& self)
+{
+	if (!self.isParrying && self.canParry)
+		return;
+	self.canAttack = self.canEvade = self.canParry = false;
+	if (self.isParrying)
 	{
-		self.currAttCD -= FRAME_DELAY;
-		if (self.currAttCD <= 0)
+		self.currParrDur -= FRAME_DELAY;
+		if (self.currParrDur >= 0)
 		{
-			self.currAttCD = self.attackCD;
-			self.currAttDur = self.attackDur;
-			self.canAttack = true;
+			//self.attackBox.x = self.ent.rect.x + (self.ent.dir == 1 ? self.ent.rect.w : -self.attackBox.w);
+			//self.attackBox.y = self.ent.pos.y;
+			return;
 		}
 	}
+	self.isParrying = false;
+	self.canAttack = self.canEvade = true;
+	self.currParrCD -= FRAME_DELAY;
+	if (self.currParrCD > 0)
+		return;
+	self.currParrCD = self.parryCD;
+	self.currParrDur = self.parryDur;
+	self.canParry = true;
+}
+
+void PlayerEvade(Player& self)
+{
+	if (!self.isEvading && self.canEvade)
+		return;
+	self.canAttack = self.canEvade = self.canParry = false;
+	if (self.isEvading)
+	{
+		self.currEvadeDur -= FRAME_DELAY;
+		if (self.currEvadeDur >= 0)
+		{
+			//self.attackBox.x = self.ent.rect.x + (self.ent.dir == 1 ? self.ent.rect.w : -self.attackBox.w);
+			//self.attackBox.y = self.ent.pos.y;
+			return;
+		}
+	}
+	self.isEvading = false;
+	self.canAttack = self.canParry = true;
+	self.currEvadeCD -= FRAME_DELAY;
+	if (self.currEvadeCD > 0)
+		return;
+	self.currEvadeCD = self.evadeCD;
+	self.currEvadeDur = self.evadeDur;
+	self.canEvade = true;
 }
 
 void PlayerThrowProjectile(Player& self, Projectile& projectile)
@@ -173,16 +236,24 @@ void PlayerUpdate(Player& self)
 	PlayerInput(self);
 	EntityUpdate(self.ent);
 	PlayerAttack(self);
+	PlayerParry(self);
+	PlayerEvade(self);
 	PlayerProcessProjectiles(self);
 }
 
 void PlayerDraw(const Player& self)
 {
-	SDL_SetRenderDrawColor(ren, self.color.r, self.color.g, self.color.b, 255);
-	SDL_RenderFillRect(ren, &self.ent.rect);
+	if (self.isParrying)
+		SDL_SetRenderDrawColor(ren, 200, 200, 0, 255);
+	else
+		SDL_SetRenderDrawColor(ren, self.color.r, self.color.g, self.color.b, 255);
+	if (!self.isEvading)
+		SDL_RenderFillRect(ren, &self.ent.rect);
 	if (self.isAttacking)
 	{
 		SDL_SetRenderDrawColor(ren, 0, 150, 0, 255);
 		SDL_RenderFillRect(ren, &self.attackBox);
 	}
+	SDL_SetRenderDrawColor(ren, 200, 50, 50, 255);
+	SDL_RenderFillRect(ren, &self.hpRect);
 }

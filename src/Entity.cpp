@@ -27,7 +27,7 @@ void EntityUpdate(Entity& self)
 	self.rect.y = self.pos.y;
 }
 
-void EntityMoveTo(Entity& self, const SDL_FPoint dest)
+void EntityMoveTo(Entity& self, const SDL_FPoint& dest)
 {
 	self.rect.x = self.pos.x = dest.x;
 	self.rect.y = self.pos.y = dest.y;
@@ -35,10 +35,10 @@ void EntityMoveTo(Entity& self, const SDL_FPoint dest)
 
 float EntityGetHorMid(const Entity& self)
 {
-	return self.pos.x + self.rect.w / 2;
+	return self.pos.x + self.rect.w / 2.0f;
 }
 
 float EntityGetVerMid(const Entity& self)
 {
-	return self.pos.y + self.rect.h / 2;
+	return self.pos.y + self.rect.h / 2.0f;
 }

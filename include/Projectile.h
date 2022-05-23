@@ -12,8 +12,8 @@ struct Projectile
 	float pickCD, currPickCD;
 };
 
-void ProjectilePlatformVerCollision(Projectile&, Platform& platform);
-void ProjectilePlatformHorCollision(Projectile&, Platform& platform);
+void ProjectilePlatformVerCollision(Projectile&, const Platform&);
+void ProjectilePlatformHorCollision(Projectile&, const Platform&);
 
 void ProjectilePickUp(Projectile&);
 

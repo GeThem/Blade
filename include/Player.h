@@ -7,19 +7,19 @@
 
 struct Controls
 {
-	SDL_Scancode left, right, jump, dismount;
-	SDL_Scancode attack, thrw;
+	SDL_Scancode left, right, jump, dismount, evade;
+	SDL_Scancode attack, thrw, parry;
 };
 
 struct Player
 {
 	Entity ent;
-	float maxHP, currHP, projBaseSpd;
-	float attackCD, currAttCD, attackDur, currAttDur;
-	bool isAttacking = false, canAttack = true, isThrowing = false;
-	bool isDismounting = false, dismountLock = false;
+	float maxHP, currHP, projBaseSpd, currEvadeDur, evadeDur, evadeCD, currEvadeCD;
+	float attackCD, currAttCD, attackDur, currAttDur, parryCD, currParrCD, parryDur, currParrDur;
+	bool isAttacking = false, canAttack = true, isThrowing = false, isEvading = false, canEvade = true;
+	bool isDismounting = false, dismountLock = false, isParrying = false, canParry = true;
 	Projectile projectiles[5];
-	SDL_Rect attackBox{ 0, 0, 120, 150 };
+	SDL_Rect attackBox{ 0, 0, 120, 150 }, hpRect;
 	Controls ctrls;
 	SDL_Color color;
 };
@@ -30,6 +30,10 @@ void PlayerInput(Player&);
 //Duration in secs
 void PlayerAttackPenalty(Player&, float duration);
 void PlayerAttack(Player&);
+
+void PlayerParry(Player&);
+
+void PlayerEvade(Player&);
 
 void PlayerProcessProjectiles(Player&);
 

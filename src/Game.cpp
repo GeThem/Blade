@@ -1,5 +1,4 @@
 #include <atlfile.h>
-#include <iostream>
 
 #include "Game.h"
 
@@ -14,8 +13,8 @@ Game GameInit(int winW, int winH)
 	for (Player& player : self.players)
 	{
 		PlayerLoadCharacter(player, "Char1.txt");
-		player.color = { (Uint8)(150 * i), 0, (Uint8)(150 * !i) };
-		EntityMoveTo(player.ent, { winW / 4.0f, winH / 5.0f });
+		player.color = { (Uint8)(150 * !i), 0, (Uint8)(150 * i) };
+		EntityMoveTo(player.ent, { (1.0f + 2.0f * i) * winW / 4.0f, winH / 5.0f });
 		for (Projectile& projectile : player.projectiles)
 		{
 			projectile.ent.pos = { 0, 0 };
@@ -41,7 +40,7 @@ void GameLoadControls(Game& self)
 	if (fopen_s(&file, "data/config.txt", "r"))
 		exit(0);
 	char temp[40];
-	Uint8 playerN;
+	Uint8 playerN = SDL_MAX_UINT8;
 	while (!feof(file))
 	{
 		fgets(temp, 40, file);
@@ -67,6 +66,10 @@ void GameLoadControls(Game& self)
 			self.players[playerN].ctrls.attack = SDL_GetScancodeFromName(val);
 		else if (!strcmp(temp, "throw"))
 			self.players[playerN].ctrls.thrw = SDL_GetScancodeFromName(val);
+		else if (!strcmp(temp, "parry"))
+			self.players[playerN].ctrls.parry = SDL_GetScancodeFromName(val);
+		else if (!strcmp(temp, "evade"))
+			self.players[playerN].ctrls.evade = SDL_GetScancodeFromName(val);
 	}
 	fclose(file);
 }
@@ -121,10 +124,19 @@ void GameHandleArenaCollisions(Game& self)
 
 void GameUpdate(Game& self)
 {
+	static float term = -0.1;
 	GameHandleEvents(self);
 	
+	int i = 0;
 	for (Player& player : self.players)
+	{
 		PlayerUpdate(player);
+		player.currHP += term;
+		if (player.currHP < 0 && term < 0 || player.currHP > player.maxHP && term > 0)
+			term = -term;
+		player.hpRect = {0 + winW * i, 0, (i ? -1 : 1) * (int)((winW * 0.4f) / player.maxHP * player.currHP), 50};
+		i++;
+	}
 	
 	GameHandleArenaCollisions(self);
 }
@@ -135,8 +147,10 @@ void GameDraw(Game& self)
 	for (const Player& player : self.players)
 		for (const Projectile& projectile : player.projectiles)
 			ProjectileDraw(projectile);
+	
 	for (const Platform& platform : self.arena)
 		PlatformDraw(platform);
+	
 	for (const Player& player : self.players)
 		PlayerDraw(player);
 

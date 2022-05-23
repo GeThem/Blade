@@ -1,6 +1,6 @@
 #include "Projectile.h"
 
-void ProjectilePlatformVerCollision(Projectile& self, Platform& platform)
+void ProjectilePlatformVerCollision(Projectile& self, const Platform& platform)
 {
 	if (!self.ent.isMoving || !platform.vCollCheck)
 		return;
@@ -15,7 +15,7 @@ void ProjectilePlatformVerCollision(Projectile& self, Platform& platform)
 	EntityMoveTo(self.ent, moveTo);
 }
 
-void ProjectilePlatformHorCollision(Projectile& self, Platform& platform)
+void ProjectilePlatformHorCollision(Projectile& self, const Platform& platform)
 {
 	if (!self.ent.isMoving || !platform.hCollCheck)
 		return;
@@ -44,13 +44,11 @@ void ProjectileUpdate(Projectile& self)
 		EntityUpdate(self.ent);
 		return;
 	}
-	if (self.currPickCD > 0)
-		self.currPickCD -= FRAME_DELAY;
-	else
-	{
-		self.currPickCD = self.pickCD;
-		self.isPickable = true;
-	}
+	self.currPickCD -= FRAME_DELAY;
+	if (self.currPickCD <= 0)
+		return;
+	self.currPickCD = self.pickCD;
+	self.isPickable = true;
 }
 
 void ProjectileDraw(const Projectile& self)
