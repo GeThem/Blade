@@ -5,3 +5,4 @@ weight=2
 hp=100
 attackdur=0.15
 attackcd=0.25
+prbasespd=30

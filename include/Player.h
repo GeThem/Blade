@@ -5,22 +5,23 @@
 #include "Projectile.h"
 #include "Entity.h"
 
-struct PressedButtons
+struct Controls
 {
-	bool att = false, thrw = false;
+	SDL_Scancode left, right, jump, dismount;
+	SDL_Scancode attack, thrw;
 };
 
 struct Player
 {
 	Entity ent;
-	float maxHP, currHP;
+	float maxHP, currHP, projBaseSpd;
 	float attackCD, currAttCD, attackDur, currAttDur;
 	bool isAttacking = false, canAttack = true, isThrowing = false;
-	int projectilesCount = 5;
+	bool isDismounting = false, dismountLock = false;
 	Projectile projectiles[5];
 	SDL_Rect attackBox{ 0, 0, 120, 150 };
-	PressedButtons pressedB;
-	SDL_Scancode controls;
+	Controls ctrls;
+	SDL_Color color;
 };
 
 void PlayerLoadCharacter(Player&, const char* filename);
@@ -30,7 +31,7 @@ void PlayerInput(Player&);
 void PlayerAttackPenalty(Player&, float duration);
 void PlayerAttack(Player&);
 
-void PlayerProjectilesUpdate(Player&);
+void PlayerProcessProjectiles(Player&);
 
 void PlayerPlatformVerCollision(Player&, Platform&);
 void PlayerPlatformHorCollision(Player&, Platform&);

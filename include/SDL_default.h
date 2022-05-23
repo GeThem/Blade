@@ -8,19 +8,22 @@
 
 extern SDL_Window* win;
 extern SDL_Renderer* ren;
-extern int win_w, win_h;
+extern int winW, winH;
+extern const Uint8* kbState;
 
-void init(Uint32 flags = SDL_INIT_VIDEO);
+void Init(Uint32 flags = SDL_INIT_VIDEO);
 
-void quit(int error = 1);
+void Quit(int error = 1);
 
-void display_init(int win_w, int win_h, const char* name = "A window", Uint32 flags = SDL_WINDOW_SHOWN);
+void DisplayInit(int win_w, int win_h, const char* name = "A window", SDL_WindowFlags flags = SDL_WINDOW_SHOWN);
 
-void display_quit();
+void DisplayQuit();
 
-void screen_fill(int r, int g, int b, int a = 255);
+void ScreenFill(int r, int g, int b, int a = 255);
+
+bool OnPress(const SDL_Scancode&);
 
 int RectGetVerMid(const SDL_Rect&);
 int RectGetHorMid(const SDL_Rect&);
 
-SDL_Texture* load_img(const char* file, SDL_Rect& rect);
+SDL_Texture* LoadImage(const char* file, SDL_Rect& rect);

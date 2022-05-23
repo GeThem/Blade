@@ -10,13 +10,14 @@
 struct Game
 {
 	SDL_Event ev;
-	Player player;
+	Player players[2];
 	Platform arena[5];
-	double dt;
 	Uint32 frameStart, frameTime;
 };
 
-Game GameInit(int win_w, int win_h);
+void GameLoadControls(Game&);
+
+Game GameInit(int winW, int winH);
 
 void GameFrameStartTime(Game&);
 

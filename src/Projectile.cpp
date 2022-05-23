@@ -7,11 +7,11 @@ void ProjectilePlatformVerCollision(Projectile& self, Platform& platform)
 	if (!SDL_HasIntersection(&self.ent.rect, &platform.rect))
 		return;
 	self.isPickable = self.ent.isMoving = false;
-	SDL_Point moveTo{ self.ent.rect.x, platform.rect.y };
+	SDL_FPoint moveTo{ self.ent.pos.x, platform.rect.y };
 	if (EntityGetVerMid(self.ent) <= RectGetVerMid(platform.rect))
-		moveTo.y -= self.ent.rect.h * 0.8;
+		moveTo.y -= self.ent.rect.h * 0.8f;
 	else
-		moveTo.y += platform.rect.h - self.ent.rect.h * 0.2;
+		moveTo.y += platform.rect.h - self.ent.rect.h * 0.2f;
 	EntityMoveTo(self.ent, moveTo);
 }
 
@@ -22,11 +22,11 @@ void ProjectilePlatformHorCollision(Projectile& self, Platform& platform)
 	if (!SDL_HasIntersection(&self.ent.rect, &platform.rect))
 		return;
 	self.isPickable = self.ent.isMoving = false;
-	SDL_Point moveTo{ platform.rect.x, self.ent.rect.y };
+	SDL_FPoint moveTo{ platform.rect.x, self.ent.pos.y };
 	if (EntityGetHorMid(self.ent) <= RectGetHorMid(platform.rect))
-		moveTo.x -= self.ent.rect.w * 0.8;
+		moveTo.x -= self.ent.rect.w * 0.8f;
 	else
-		moveTo.x += platform.rect.w - self.ent.rect.w * 0.2;
+		moveTo.x += platform.rect.w - self.ent.rect.w * 0.2f;
 	EntityMoveTo(self.ent, moveTo);
 }
 

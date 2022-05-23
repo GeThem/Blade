@@ -19,26 +19,26 @@ void EntityUpdate(Entity& self)
 	}
 	self.pos.x += self.currMS;
 	
-	self.vVel += self.weight;
-	self.pos.y += self.vVel;
+	self.verMS += self.vVel;
+	self.pos.y += self.verMS;
 	self.isInAir = true;
 
 	self.rect.x = self.pos.x;
 	self.rect.y = self.pos.y;
 }
 
-void EntityMoveTo(Entity& self, const SDL_Point dest)
+void EntityMoveTo(Entity& self, const SDL_FPoint dest)
 {
-	self.pos.x = self.rect.x = dest.x;
-	self.pos.y = self.rect.y = dest.y;
+	self.rect.x = self.pos.x = dest.x;
+	self.rect.y = self.pos.y = dest.y;
 }
 
-int EntityGetHorMid(const Entity& self)
+float EntityGetHorMid(const Entity& self)
 {
-	return RectGetHorMid(self.rect);
+	return self.pos.x + self.rect.w / 2;
 }
 
-int EntityGetVerMid(const Entity& self)
+float EntityGetVerMid(const Entity& self)
 {
-	return RectGetVerMid(self.rect);
+	return self.pos.y + self.rect.h / 2;
 }

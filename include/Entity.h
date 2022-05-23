@@ -8,15 +8,15 @@ struct Entity
 {
 	SDL_FPoint pos;
 	SDL_Rect rect;
-	int8_t dir = 0;
-	float maxMS, currMS = 0, weight, hVel, vVel = 0;
+	int8_t dir = 1;
+	float maxMS, currMS = 0, verMS = 0, vVel, hVel;
 	bool isInAir = false, isMoving = false;
 };
 
 void EntityUpdate(Entity&);
 
-void EntityMoveTo(Entity&, const SDL_Point dest);
+void EntityMoveTo(Entity&, const SDL_FPoint dest);
 
-int EntityGetHorMid(const Entity&);
+float EntityGetHorMid(const Entity&);
 
-int EntityGetVerMid(const Entity&);
+float EntityGetVerMid(const Entity&);
