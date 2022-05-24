@@ -45,7 +45,7 @@ void ProjectileUpdate(Projectile& self)
 		return;
 	}
 	self.currPickCD -= FRAME_DELAY;
-	if (self.currPickCD <= 0)
+	if (self.currPickCD > 0)
 		return;
 	self.currPickCD = self.pickCD;
 	self.isPickable = true;

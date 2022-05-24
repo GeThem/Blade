@@ -65,7 +65,7 @@ void PlayerInput(Player& self)
 		self.isEvading = self.canEvade;
 
 	if (OnPress(self.ctrls.thrw))
-		self.isThrowing = !self.isEvading && !self.isAttacking && !self.isParrying;
+		self.isThrowing = !self.isEvading && !self.isParrying;
 
 	if (!self.dismountLock)
 		self.isDismounting = kbState[self.ctrls.dismount];
@@ -115,7 +115,7 @@ void PlayerAttack(Player& self)
 {
 	if (!self.isAttacking && self.canAttack)
 		return;
-	self.canAttack = self.canEvade = self.canParry = false;
+	self.canAttack = false;
 	if (self.isAttacking)
 	{
 		self.currAttDur -= FRAME_DELAY;
@@ -127,7 +127,6 @@ void PlayerAttack(Player& self)
 		}
 	}
 	self.isAttacking = false;
-	self.canEvade = self.canParry = true;
 	self.currAttCD -= FRAME_DELAY;
 	if (self.currAttCD > 0)
 		return;
@@ -140,7 +139,7 @@ void PlayerParry(Player& self)
 {
 	if (!self.isParrying && self.canParry)
 		return;
-	self.canAttack = self.canEvade = self.canParry = false;
+	self.canParry = false;
 	if (self.isParrying)
 	{
 		self.currParrDur -= FRAME_DELAY;
@@ -152,7 +151,6 @@ void PlayerParry(Player& self)
 		}
 	}
 	self.isParrying = false;
-	self.canAttack = self.canEvade = true;
 	self.currParrCD -= FRAME_DELAY;
 	if (self.currParrCD > 0)
 		return;
@@ -165,7 +163,7 @@ void PlayerEvade(Player& self)
 {
 	if (!self.isEvading && self.canEvade)
 		return;
-	self.canAttack = self.canEvade = self.canParry = false;
+	self.canEvade = false;
 	if (self.isEvading)
 	{
 		self.currEvadeDur -= FRAME_DELAY;
@@ -177,7 +175,6 @@ void PlayerEvade(Player& self)
 		}
 	}
 	self.isEvading = false;
-	self.canAttack = self.canParry = true;
 	self.currEvadeCD -= FRAME_DELAY;
 	if (self.currEvadeCD > 0)
 		return;
