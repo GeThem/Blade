@@ -1,15 +1,36 @@
 #pragma once
 
-#define FRAME_DELAY 16.667f
+#define FRAME_DELAY 16u
 #define FPS 60
 
 #include <SDL.h>
 #include <SDL_image.h>
+#include <SDL_ttf.h>
+
+typedef struct Mouse
+{
+	SDL_Point pos;
+	Uint32 buttons;
+	Uint8 buttonsLast = 0;
+} Mouse;
+
+typedef struct Keyboard
+{
+	const Uint8* state = SDL_GetKeyboardState(NULL);
+	Uint8 stateLast[287]{ 0 };
+} Keyboard;
 
 extern SDL_Window* win;
 extern SDL_Renderer* ren;
 extern int winW, winH;
-extern const Uint8* kbState;
+extern Keyboard kb;
+extern Mouse mouse;
+
+typedef struct Image
+{
+	SDL_Texture* texture;
+	SDL_Rect rect{ 0, 0 };
+} Image;
 
 void Init(Uint32 flags = SDL_INIT_VIDEO);
 
@@ -19,11 +40,20 @@ void DisplayInit(int win_w, int win_h, const char* name = "A window", SDL_Window
 
 void DisplayQuit();
 
-void ScreenFill(int r, int g, int b, int a = 255);
+void ScreenFill(Uint8 r, Uint8 g, Uint8 b, Uint8 a = 255);
 
-bool OnPress(const SDL_Scancode&);
+void KeyboardUpdate();
+bool OnKeyPress(const SDL_Scancode&);
+
+void MouseUpdate();
+bool OnButtonRelease(const Uint8 buttonMask);
+bool OnClick(const Uint8 buttonMask);
 
 int RectGetVerMid(const SDL_Rect&);
 int RectGetHorMid(const SDL_Rect&);
 
-SDL_Texture* LoadImage(const char* file, SDL_Rect& rect);
+Image LoadImage(const char* filename);
+
+SDL_Texture* LoadTexture(const char* filename, SDL_Rect*);
+
+void RenderText(Image& textImg, TTF_Font* font, const char* string, const SDL_Color&);

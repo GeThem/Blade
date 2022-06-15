@@ -5,7 +5,8 @@
 SDL_Window* win;
 SDL_Renderer* ren;
 int winW, winH;
-const Uint8* kbState = SDL_GetKeyboardState(NULL);
+Keyboard kb;
+Mouse mouse;
 
 void Init(Uint32 flags)
 {
@@ -21,6 +22,13 @@ void Init(Uint32 flags)
 		system("pause");
 		Quit(1);
 	}
+
+	if (TTF_Init())
+	{
+		printf_s("Coudn't init TTF! Error: %s", SDL_GetError());
+		system("pause");
+		Quit(1);
+	}
 }
 
 void Quit(int error)
@@ -29,6 +37,7 @@ void Quit(int error)
 		SDL_DestroyRenderer(ren);
 	if (win != NULL)
 		SDL_DestroyWindow(win);
+	TTF_Quit();
 	IMG_Quit();
 	SDL_Quit();
 	exit(error);
@@ -59,10 +68,12 @@ void DisplayQuit() {
 		SDL_DestroyWindow(win);
 }
 
-void ScreenFill(int r, int g, int b, int a)
+void ScreenFill(Uint8 r, Uint8 g, Uint8 b, Uint8 a)
 {
+	SDL_SetRenderDrawBlendMode(ren, SDL_BLENDMODE_BLEND);
 	SDL_SetRenderDrawColor(ren, r, g, b, a);
-	SDL_RenderClear(ren);
+	SDL_Rect rect = { 0, 0, winW, winH };
+	SDL_RenderFillRect(ren, &rect);
 }
 
 int RectGetVerMid(const SDL_Rect& self)
@@ -75,32 +86,65 @@ int RectGetHorMid(const SDL_Rect& self)
 	return self.x + self.w / 2;
 }
 
-bool OnPress(const SDL_Scancode& key)
+void KeyboardUpdate()
 {
-	static Uint8 kbLast[286]{ 0 };
-	if (!kbState[key])
-	{
-		kbLast[key] = 0;
-		return false;
-	}
-	if (!kbLast[key])
-	{
-		kbLast[key] = 1;
-		return true;
-	}
-	return false;
+	for (Uint16 i = 4; i < 287; i++)
+		kb.stateLast[i] = kb.state[i];
 }
 
-SDL_Texture* LoadImage(const char* file, SDL_Rect& rect)
+bool OnKeyPress(const SDL_Scancode& key)
 {
-	SDL_Surface* surface = IMG_Load(file);
+	return kb.state[key] && !kb.stateLast[key];
+}
+
+void MouseUpdate()
+{
+	mouse.buttonsLast = mouse.buttons;
+	mouse.buttons = SDL_GetMouseState(&mouse.pos.x, &mouse.pos.y);
+}
+
+bool OnButtonRelease(const Uint8 buttonMask)
+{
+	return !(mouse.buttons & buttonMask) && mouse.buttonsLast & buttonMask;
+}
+
+bool OnClick(const Uint8 buttonMask)
+{
+	return mouse.buttons & buttonMask && !(mouse.buttonsLast & buttonMask);
+}
+
+Image LoadImage(const char* filename)
+{
+	Image image;
+	image.texture = LoadTexture(filename, &image.rect);
+	return image;
+}
+
+SDL_Texture* LoadTexture(const char* filename, SDL_Rect* rect)
+{
+	SDL_Surface* surface = IMG_Load(filename);
 	if (surface == NULL)
 	{
-		printf("Coudln't load image %s! Error: %s", file, SDL_GetError());
+		printf("Coudln't load image %s! Error: %s", filename, SDL_GetError());
 		Quit(1);
 	}
+	if (rect != NULL)
+	{
+		*rect = { 0, 0, surface->w, surface->h };
+	}
 	SDL_Texture* texture = SDL_CreateTextureFromSurface(ren, surface);
-	rect = { 0, 0, surface->w, surface->h };
 	SDL_FreeSurface(surface);
 	return texture;
+}
+
+void RenderText(Image& textImg, TTF_Font* font, const char* string, const SDL_Color& color)
+{
+	if (textImg.texture != NULL)
+		SDL_DestroyTexture(textImg.texture);
+	SDL_Surface* surface = TTF_RenderText_Blended(font, string, color);
+	SDL_Texture* texture = SDL_CreateTextureFromSurface(ren, surface);
+	textImg.texture = texture;
+	textImg.rect.w = surface->w;
+	textImg.rect.h = surface->h;
+	SDL_FreeSurface(surface);
 }

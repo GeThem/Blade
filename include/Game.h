@@ -7,17 +7,21 @@
 #include "Platform.h"
 #include "Projectile.h"
 
-struct Game
+#define TOMENU 1
+
+typedef struct Game
 {
 	SDL_Event ev;
 	Player players[2];
 	Platform arena[5];
-	Uint32 frameStart, frameTime;
-};
+	Uint32 lastTime = 0, dt = 0, currTime = 0, lastRenderedTime = 0;
+} Game;
 
 void GameLoadControls(Game&);
 
-Game GameInit(int winW, int winH);
+Game GameInit();
+
+void GameStart(Game&);
 
 void GameFrameStartTime(Game&);
 
@@ -27,7 +31,7 @@ void GameDelay(Game&);
 
 void GameHandleArenaCollisions(Game&);
 
-void GameUpdate(Game&);
+Sint8 GameUpdate(Game&);
 
 void GameDraw(Game&);
 

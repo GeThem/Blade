@@ -2,10 +2,10 @@
 
 #include "SDL_default.h"
 
-struct Platform
+typedef struct Platform
 {
 	SDL_Rect rect;
 	bool hCollCheck = false, vCollCheck = true, isDismountable = false;
-};
+} Platform;
 
 void PlatformDraw(const Platform&);
