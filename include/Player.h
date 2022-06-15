@@ -41,7 +41,7 @@ void PlayerProcessAttack(Player&, Uint16 dt);
 void PlayerProcessParry(Player&, Uint16 dt);
 void PlayerProcessEvade(Player&, Uint16 dt);
 
-void PlayerProcessProjectiles(Player&);
+void PlayerProcessProjectiles(Player&, Uint16 dt);
 
 void PlayerPlatformVerCollision(Player&, Platform&);
 void PlayerPlatformHorCollision(Player&, Platform&);

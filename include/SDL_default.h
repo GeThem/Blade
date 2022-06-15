@@ -1,7 +1,7 @@
 #pragma once
 
-#define FRAME_DELAY 16u
-#define FPS 60
+#define FPS 60u
+#define FRAME_DELAY (1000u / FPS)
 
 #include <SDL.h>
 #include <SDL_image.h>
@@ -10,8 +10,7 @@
 typedef struct Mouse
 {
 	SDL_Point pos;
-	Uint32 buttons;
-	Uint8 buttonsLast = 0;
+	Uint8 buttons = SDL_GetMouseState(&pos.x, &pos.y), buttonsLast = 0;
 } Mouse;
 
 typedef struct Keyboard

@@ -13,8 +13,9 @@ void EntityUpdate(Entity& self)
 	}
 	else if (!self.isInAir)
 	{
-		self.currMS -= self.hVel * self.dir;
-		if (self.currMS * self.dir < 0)
+		self.slideDir = self.currMS > 0 ? 1 : -1;
+		self.currMS -= self.hVel * self.slideDir;
+		if (self.currMS * self.slideDir < 0)
 			self.currMS = 0;
 	}
 	self.pos.x += self.currMS;

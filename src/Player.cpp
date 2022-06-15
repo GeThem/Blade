@@ -202,7 +202,7 @@ void PlayerThrowProjectile(Player& self, Projectile& projectile)
 	EntityMoveTo(projectile.ent, moveTo);
 }
 
-void PlayerProcessProjectiles(Player& self)
+void PlayerProcessProjectiles(Player& self, Uint16 dt)
 {
 	for (Projectile& projectile : self.projectiles)
 	{
@@ -216,7 +216,7 @@ void PlayerProcessProjectiles(Player& self)
 			ProjectilePickUp(projectile);		
 			continue;
 		}
-		ProjectileUpdate(projectile);
+		ProjectileUpdate(projectile, dt);
 	}
 }
 
@@ -240,7 +240,7 @@ void PlayerUpdate(Player& self, Uint16 dt)
 	if (!self.isAttacking && !self.isParrying || !self.canEvade)
 		PlayerProcessEvade(self, dt);
 	if (!self.isAttacking && !self.isEvading && !self.isParrying)
-		PlayerProcessProjectiles(self);
+		PlayerProcessProjectiles(self, dt);
 }
 
 void PlayerDraw(const Player& self)

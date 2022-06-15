@@ -33,6 +33,6 @@ void GameHandleArenaCollisions(Game&);
 
 Sint8 GameUpdate(Game&);
 
-void GameDraw(Game&);
+void GameDraw(const Game&);
 
 void GameQuit();

@@ -34,6 +34,7 @@ Menu MainMenuInit()
 	TTF_Font* font = TTF_OpenFont("data/fonts/JetBrainsMono-Bold.ttf", 80);
 	Menu self;
 	SDL_Color states[3]{ {100, 100, 100, 255}, {196, 22, 22, 255}, {22, 196, 22, 255} };
+	self.Background = { 60, 60, 60, 255 };
 	self.escReturn = MM_EXIT;
 	self.textButtonsCount = 3;
 	self.textButtons = (TextButton*)malloc(sizeof(TextButton) * self.textButtonsCount);
@@ -48,8 +49,8 @@ Menu InGameMenuInit()
 {
 	TTF_Font* font = TTF_OpenFont("data/fonts/JetBrainsMono-Bold.ttf", 80);
 	Menu self;
-	SDL_Color states[3]{ {100, 100, 100, 255}, {196, 22, 22, 255}, {22, 196, 22, 255} };
-	self.alpha = 150;
+	SDL_Color states[3]{ {100, 100, 100, 100}, {196, 22, 22, 255}, {22, 196, 22, 255} };
+	self.Background = { 60, 60, 60, 150 };
 	self.escReturn = IG_RESUME;
 	self.textButtonsCount = 3;
 	self.textButtons = (TextButton*)malloc(sizeof(TextButton) * self.textButtonsCount);
@@ -79,14 +80,10 @@ Sint8 MenuUpdate(Menu& self)
 	return -1;
 }
 
-void MenuDrawBackground(const Menu& self)
-{
-	ScreenFill(60, 60, 60, self.alpha);
-}
-
 void MenuDraw(const Menu& self)
 {
+	const SDL_Color& BG = self.Background;
+	ScreenFill(BG.r, BG.g, BG.b, BG.a);
 	for (Uint8 i = 0; i < self.textButtonsCount; i++)
 		TextButtonDraw(self.textButtons[i]);
-	SDL_RenderPresent(ren);
 }

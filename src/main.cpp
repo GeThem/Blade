@@ -16,37 +16,35 @@ typedef enum Menus
 	INGAMEMENU = 2
 } Menus;
 
-typedef bool (*Func)(Menu*&, Sint8&);
-
-Sint8 GameLoop(Game& game, const bool& restartGame)
+void GameLoop(Game& game, const bool& restartGame, Sint8& flag)
 {
 	if (restartGame)
 		GameStart(game);
-	Sint8 flag;
 	do
 	{
 		GameFrameStartTime(game);
 		GameHandleEvents(game);
 		flag = GameUpdate(game);
 		GameDraw(game);
+		SDL_RenderPresent(ren);
 		GameDelay(game);
 	} while (flag != TOMENU);
-	return MENU;
+	flag = MENU;
 }
 
-Sint8 MenuLoop(Menu& menu)
+void MenuLoop(Menu& menu, const Game* game, Sint8& flag)
 {
-	MenuDrawBackground(menu);
-	Sint8 flag;
 	do
 	{
 		MenuFrameStartTime(menu);
 		MenuHandleEvents(menu);
 		flag = MenuUpdate(menu);
+		if (game)
+			GameDraw(*game);
 		MenuDraw(menu);
+		SDL_RenderPresent(ren);
 		MenuDelay(menu);
 	} while (flag == -1);
-	return flag;
 }
 
 bool MainMenuLeave(Menu*& menu, Sint8& flag)
@@ -91,25 +89,26 @@ int main(int argc, char** argv)
 {
 	Init();
 	DisplayInit(1400, 800, "Blade");
+	SDL_SetRenderDrawBlendMode(ren, SDL_BLENDMODE_BLEND);
 
 	Game game = GameInit();
 	Menu menus[] = { MainMenuInit(), SettingsMenuInit(), InGameMenuInit() };
-	Func menuLeave[] = { MainMenuLeave, SettingsMenuLeave, InGameMenuLeave };
+	bool (*menusLeave[])(Menu*&, Sint8&) = { MainMenuLeave, SettingsMenuLeave, InGameMenuLeave };
 
-	Menu* currentMenu = menus + MAINMENU;
+	Menu* currentMenu = menus;
 	Sint8 flag = MENU;
 	bool restartGame = true;
 	while (flag != QUIT)
 	{
 		if (flag == GAME)
 		{
-			flag = GameLoop(game, restartGame);
+			GameLoop(game, restartGame, flag);
 			continue;
 		}
 		if (flag == MENU)
 		{
-			flag = MenuLoop(*currentMenu);
-			restartGame = menuLeave[currentMenu - menus](currentMenu, flag);
+			MenuLoop(*currentMenu, currentMenu - menus == INGAMEMENU ? &game : NULL, flag);
+			restartGame = menusLeave[currentMenu - menus](currentMenu, flag);
 			continue;
 		}
 	}

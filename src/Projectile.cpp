@@ -35,7 +35,7 @@ void ProjectilePickUp(Projectile& self)
 	self.isPickable = self.ent.isMoving = self.wasThrown = false;
 }
 
-void ProjectileUpdate(Projectile& self)
+void ProjectileUpdate(Projectile& self, Uint16 dt)
 {
 	if (!self.wasThrown || self.isPickable)
 		return;
@@ -44,7 +44,7 @@ void ProjectileUpdate(Projectile& self)
 		EntityUpdate(self.ent);
 		return;
 	}
-	self.currPickCD -= FRAME_DELAY;
+	self.currPickCD -= dt;
 	if (self.currPickCD > 0)
 		return;
 	self.currPickCD = self.pickCD;

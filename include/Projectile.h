@@ -17,6 +17,6 @@ void ProjectilePlatformHorCollision(Projectile&, const Platform&);
 
 void ProjectilePickUp(Projectile&);
 
-void ProjectileUpdate(Projectile&);
+void ProjectileUpdate(Projectile&, Uint16 dt);
 
 void ProjectileDraw(const Projectile&);

@@ -149,7 +149,7 @@ Sint8 GameUpdate(Game& self)
 	return 0;
 }
 
-void GameDraw(Game& self)
+void GameDraw(const Game& self)
 {
 	ScreenFill(0, 0, 0);
 	for (const Player& player : self.players)
@@ -161,8 +161,6 @@ void GameDraw(Game& self)
 	
 	for (const Player& player : self.players)
 		PlayerDraw(player);
-
-	SDL_RenderPresent(ren);
 }
 
 void GameQuit()

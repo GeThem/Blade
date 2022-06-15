@@ -19,13 +19,12 @@ typedef struct Menu
 	Uint32 lastTime = 0, currTime = 0;
 	TextButton* textButtons;
 	Uint8 textButtonsCount, escReturn;
-	Uint8 alpha = 255;
+	SDL_Color Background;
 } Menu;
 
 void MenuFrameStartTime(Menu&);
 void MenuHandleEvents(Menu&);
 Sint8 MenuUpdate(Menu&);
-void MenuDrawBackground(const Menu&);
 void MenuDraw(const Menu&);
 void MenuDelay(Menu&);
 

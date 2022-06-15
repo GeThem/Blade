@@ -70,7 +70,6 @@ void DisplayQuit() {
 
 void ScreenFill(Uint8 r, Uint8 g, Uint8 b, Uint8 a)
 {
-	SDL_SetRenderDrawBlendMode(ren, SDL_BLENDMODE_BLEND);
 	SDL_SetRenderDrawColor(ren, r, g, b, a);
 	SDL_Rect rect = { 0, 0, winW, winH };
 	SDL_RenderFillRect(ren, &rect);
