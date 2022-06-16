@@ -10,26 +10,24 @@ typedef enum MButtons
 	IG_RESUME = 0,
 	IG_RESTART = 1,
 	IG_BACKTOMENU = 2,
-	SM_BACK = 0
+	SM_SAVE = 0,
+	SM_BACK = 1,
 } MButtons;
 
 typedef struct Menu
 {
-	SDL_Event ev;
-	Uint32 lastTime = 0, currTime = 0;
-	TextButton* textButtons;
-	Uint8 textButtonsCount, escReturn;
+	TextButton* textButtons = NULL;
+	SwitchButton* switchButtons = NULL;
+	Uint8 textButtonsCount = 0, switchButtonsCount = 0, escReturn;
 	SDL_Color Background;
 } Menu;
 
-void MenuFrameStartTime(Menu&);
-void MenuHandleEvents(Menu&);
 Sint8 MenuUpdate(Menu&);
 void MenuDraw(const Menu&);
-void MenuDelay(Menu&);
 
 Menu MainMenuInit();
 
 Menu SettingsMenuInit();
+Sint8 SettingsMenuUpdate(Menu&);
 
 Menu InGameMenuInit();

@@ -11,27 +11,19 @@
 
 typedef struct Game
 {
-	SDL_Event ev;
 	Player players[2];
 	Platform arena[5];
-	Uint32 lastTime = 0, dt = 0, currTime = 0, lastRenderedTime = 0;
 } Game;
 
 void GameLoadControls(Game&);
 
 Game GameInit();
 
-void GameStart(Game&);
-
-void GameFrameStartTime(Game&);
-
-void GameHandleEvents(Game&);
-
-void GameDelay(Game&);
+void GameRestart(Game&);
 
 void GameHandleArenaCollisions(Game&);
 
-Sint8 GameUpdate(Game&);
+Sint8 GameUpdate(Game&, const Uint16& dt);
 
 void GameDraw(const Game&);
 

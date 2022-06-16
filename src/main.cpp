@@ -2,87 +2,162 @@
 #include "Menus.h"
 #include <stdio.h>
 
-typedef enum State
+typedef enum Loop
 {
 	GAME,
 	MENU,
 	QUIT
-} State;
+} Loop;
 
-typedef enum Menus
+typedef enum MenuType
 {
 	MAINMENU = 0,
 	SETTINGSMENU = 1,
 	INGAMEMENU = 2
-} Menus;
+} MenuType;
 
-void GameLoop(Game& game, const bool& restartGame, Sint8& flag)
+bool MainMenuLeave(Menu*& menu, Sint8& loopFlag)
 {
-	if (restartGame)
-		GameStart(game);
-	do
-	{
-		GameFrameStartTime(game);
-		GameHandleEvents(game);
-		flag = GameUpdate(game);
-		GameDraw(game);
-		SDL_RenderPresent(ren);
-		GameDelay(game);
-	} while (flag != TOMENU);
-	flag = MENU;
-}
-
-void MenuLoop(Menu& menu, const Game* game, Sint8& flag)
-{
-	do
-	{
-		MenuFrameStartTime(menu);
-		MenuHandleEvents(menu);
-		flag = MenuUpdate(menu);
-		if (game)
-			GameDraw(*game);
-		MenuDraw(menu);
-		SDL_RenderPresent(ren);
-		MenuDelay(menu);
-	} while (flag == -1);
-}
-
-bool MainMenuLeave(Menu*& menu, Sint8& flag)
-{
-	if (flag == MM_SETTINGS)
+	if (loopFlag == MM_SETTINGS)
 	{
 		menu += SETTINGSMENU;
-		flag = MENU;
+		loopFlag = MENU;
 		return true;
 	}
-	if (flag == MM_PLAY)
+	if (loopFlag == MM_PLAY)
 	{
-		flag = GAME;
+		loopFlag = GAME;
 		menu += INGAMEMENU;
 		return true;
 	}
-	flag = QUIT;
+	loopFlag = QUIT;
 	return true;
 }
 
-bool SettingsMenuLeave(Menu*& menu, Sint8& flag)
+bool SettingsMenuLeave(Menu*& menu, Sint8& loopFlag)
 {
 	menu -= SETTINGSMENU;
-	flag = MENU;
+	loopFlag = MENU;
 	return true;
 }
 
-bool InGameMenuLeave(Menu*& menu, Sint8& flag)
+bool InGameMenuLeave(Menu*& menu, Sint8& loopFlag)
 {
-	if (flag == IG_BACKTOMENU)
+	if (loopFlag == IG_BACKTOMENU)
 	{
-		flag = MENU;
+		loopFlag = MENU;
 		menu -= INGAMEMENU;
 		return true;
 	}
-	bool returnVal = flag == IG_RESTART;
-	flag = GAME;
+	bool returnVal = loopFlag == IG_RESTART;
+	loopFlag = GAME;
 	return returnVal;
+}
+
+typedef struct App
+{
+	SDL_Event ev;
+	Uint32 lastTime = 0, currTime = 0, lastRenderedTime = 0, dt = 0;
+	Game game = GameInit();
+	Menu menus[3]{ MainMenuInit(), SettingsMenuInit(), InGameMenuInit() };
+	bool (*menuLeave[3])(Menu*&, Sint8&){ MainMenuLeave, SettingsMenuLeave, InGameMenuLeave };
+	Menu* currMenu = menus;
+	Sint8 loopFlag = MENU;
+	bool restartGame = true;
+} App;
+
+MenuType CurrMenuType(App& self)
+{
+	return (MenuType)(self.currMenu - self.menus);
+}
+
+void AppRestartTime(App& self)
+{
+	self.currTime = self.lastRenderedTime = 0;
+	self.lastTime = SDL_GetTicks();
+}
+
+void AppFrameStartTime(App& self)
+{
+	Uint32 currTime = SDL_GetTicks();
+	self.dt = currTime - self.lastTime;
+	self.currTime += self.dt;
+	self.lastTime = currTime;
+}
+
+void AppDelay(App& self)
+{
+	Uint32 frameTime = SDL_GetTicks() - self.lastTime;
+	if (FRAME_DELAY > frameTime)
+		SDL_Delay(FRAME_DELAY - frameTime);
+}
+
+void AppHandleEvents(App& self)
+{
+	MouseUpdate();
+	KeyboardUpdate();
+	while (SDL_PollEvent(&self.ev))
+	{
+		switch (self.ev.type)
+		{
+		case SDL_QUIT:
+			Quit();
+		}
+	}
+}
+
+void GameLoop(App& app)
+{
+	Game& game = app.game;
+	if (app.restartGame)
+	{
+		GameRestart(game);
+		AppRestartTime(app);
+	}
+	do
+	{
+		AppFrameStartTime(app);
+		AppHandleEvents(app);
+		app.loopFlag = GameUpdate(game, app.dt);
+		GameDraw(game);
+		SDL_RenderPresent(ren);
+		AppDelay(app);
+	} while (app.loopFlag != TOMENU);
+	app.loopFlag = MENU;
+}
+
+void MenuLoop(App& app)
+{
+	bool isInGameMenu = CurrMenuType(app) == INGAMEMENU;
+	Sint8(*UpdateFunc)(Menu&) = CurrMenuType(app) == SETTINGSMENU ? SettingsMenuUpdate : MenuUpdate;
+	Menu& menu = *app.currMenu;
+	do
+	{
+		AppFrameStartTime(app);
+		AppHandleEvents(app);
+		app.loopFlag = UpdateFunc(menu);
+		if (isInGameMenu)
+			GameDraw(app.game);
+		MenuDraw(menu);
+		SDL_RenderPresent(ren);
+		AppDelay(app);
+	} while (app.loopFlag == -1);
+	app.restartGame = app.menuLeave[CurrMenuType(app)](app.currMenu, app.loopFlag);
+}
+
+void AppRun(App& self)
+{
+	if (self.loopFlag == GAME)
+	{
+		GameLoop(self);
+		return;
+	}
+	if (self.loopFlag == MENU)
+	{
+		MenuLoop(self);
+		return;
+	}
+	Quit();
 }
 
 int main(int argc, char** argv)
@@ -91,27 +166,10 @@ int main(int argc, char** argv)
 	DisplayInit(1400, 800, "Blade");
 	SDL_SetRenderDrawBlendMode(ren, SDL_BLENDMODE_BLEND);
 
-	Game game = GameInit();
-	Menu menus[] = { MainMenuInit(), SettingsMenuInit(), InGameMenuInit() };
-	bool (*menusLeave[])(Menu*&, Sint8&) = { MainMenuLeave, SettingsMenuLeave, InGameMenuLeave };
-
-	Menu* currentMenu = menus;
-	Sint8 flag = MENU;
-	bool restartGame = true;
-	while (flag != QUIT)
+	App app;
+	while (true)
 	{
-		if (flag == GAME)
-		{
-			GameLoop(game, restartGame, flag);
-			continue;
-		}
-		if (flag == MENU)
-		{
-			MenuLoop(*currentMenu, currentMenu - menus == INGAMEMENU ? &game : NULL, flag);
-			restartGame = menusLeave[currentMenu - menus](currentMenu, flag);
-			continue;
-		}
+		AppRun(app);
 	}
-	Quit();
 	return 0;
 }

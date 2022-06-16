@@ -62,6 +62,14 @@ void PlayerReboot(Player& self)
 	self.ent.isInAir = self.ent.isMoving = false;
 	self.ent.dir = 1;
 	self.pressedCtrls = {};
+	for (Projectile& projectile : self.projectiles)
+	{
+		projectile.ent.pos = { 0, 0 };
+		projectile.ent.verMS = projectile.ent.currMS = 0;
+		projectile.ent.rect = { 0, 0, 50, 50 };
+		projectile.ent.vVel = 0.5;
+		projectile.pickCD = projectile.currPickCD = 1000;
+	}
 }
 
 void PlayerInput(Player& self)
@@ -188,6 +196,7 @@ void PlayerProcessEvade(Player& self, Uint16 dt)
 
 void PlayerThrowProjectile(Player& self, Projectile& projectile)
 {
+	projectile.ent.slideDir = projectile.ent.dir = self.ent.dir;
 	projectile.isPickable = self.pressedCtrls.thrw = self.isThrowing = false;
 	projectile.wasThrown = projectile.ent.isMoving = true;
 	projectile.ent.hVel = 0;

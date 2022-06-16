@@ -11,6 +11,11 @@ Game GameInit()
 		PlayerLoadCharacter(self.players[i], "Char1.txt");
 		self.players[i].color = { (Uint8)(150 * !i), 0, (Uint8)(150 * i) };
 	}
+	self.arena[0].rect = { 0, winH - 50, winW, 50 };
+	self.arena[1] = { { 0, winH - 300, winW / 5, 20 }, false, true, true };
+	self.arena[2] = { {-50, 0, 60, winH}, true, false };
+	self.arena[3] = { {winW - 10, 0, 60, winH}, true, false };
+	self.arena[4] = { {(int)(winW * 0.5), (int)(winH * 0.6), 40, 600}, true, true };
 	return self;
 }
 
@@ -54,57 +59,12 @@ void GameLoadControls(Game& self)
 	fclose(file);
 }
 
-void GameStart(Game& self)
+void GameRestart(Game& self)
 {
-	self.currTime = self.lastRenderedTime = 0;
-	self.lastTime = SDL_GetTicks();
-	Uint8 i = 0;
-	for (Player& player : self.players)
+	for (Uint8 i = 0; i < 2; i++)
 	{
-		PlayerReboot(player);
-		EntityMoveTo(player.ent, { (1.0f + 2.0f * i) * winW / 4.0f, winH / 5.0f });
-		for (Projectile& projectile : player.projectiles)
-		{
-			projectile.ent.pos = { 0, 0 };
-			projectile.ent.verMS = 0;
-			projectile.ent.rect = { 0, 0, 50, 50 };
-			projectile.ent.vVel = 0.5;
-			projectile.pickCD = projectile.currPickCD = 1000;
-		}
-		i++;
-	}
-	self.arena[0].rect = { 0, winH - 50, winW, 50 };
-	self.arena[1] = { { 0, winH - 300, winW / 5, 20 }, false, true, true };
-	self.arena[2] = { {-50, 0, 60, winH}, true, false };
-	self.arena[3] = { {winW - 10, 0, 60, winH}, true, false };
-	self.arena[4] = { {(int)(winW * 0.5), (int)(winH * 0.6), 40, 600}, true, true };
-}
-
-void GameFrameStartTime(Game& self)
-{
-	Uint32 currTime = SDL_GetTicks();
-	self.dt = currTime - self.lastTime;
-	self.currTime += self.dt;
-	self.lastTime = currTime;
-}
-
-void GameDelay(Game& self)
-{
-	Uint32 frameTime = SDL_GetTicks() - self.lastTime;
-	if (FRAME_DELAY > frameTime)
-		SDL_Delay(FRAME_DELAY - frameTime);
-}
-
-void GameHandleEvents(Game& self)
-{
-	KeyboardUpdate();
-	while (SDL_PollEvent(&self.ev))
-	{
-		switch (self.ev.type)
-		{
-		case SDL_QUIT:
-			GameQuit();
-		}
+		PlayerReboot(self.players[i]);
+		EntityMoveTo(self.players[i].ent, { (1.0f + 2.0f * i) * winW / 4.0f, winH / 5.0f });
 	}
 }
 
@@ -129,7 +89,7 @@ void GameHandleArenaCollisions(Game& self)
 	}
 }
 
-Sint8 GameUpdate(Game& self)
+Sint8 GameUpdate(Game& self, const Uint16& dt)
 {
 	if (OnKeyPress(SDL_SCANCODE_ESCAPE))
 		return TOMENU;
@@ -137,7 +97,7 @@ Sint8 GameUpdate(Game& self)
 	int i = 0;
 	for (Player& player : self.players)
 	{
-		PlayerUpdate(player, self.dt);
+		PlayerUpdate(player, dt);
 		player.currHP += term;
 		if (player.currHP < 0 && term < 0 || player.currHP > player.maxHP && term > 0)
 			term = -term;
@@ -151,7 +111,7 @@ Sint8 GameUpdate(Game& self)
 
 void GameDraw(const Game& self)
 {
-	ScreenFill(0, 0, 0);
+	ScreenFill(3, 186, 252);
 	for (const Player& player : self.players)
 		for (const Projectile& projectile : player.projectiles)
 			ProjectileDraw(projectile);
