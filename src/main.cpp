@@ -108,37 +108,44 @@ void AppHandleEvents(App& self)
 
 void GameLoop(App& app)
 {
-	Game& game = app.game;
 	if (app.restartGame)
 	{
-		GameRestart(game);
+		GameRestart(app.game);
 		AppRestartTime(app);
 	}
 	do
 	{
 		AppFrameStartTime(app);
 		AppHandleEvents(app);
-		app.loopFlag = GameUpdate(game, app.dt);
-		GameDraw(game);
+		app.loopFlag = GameUpdate(app.game, app.dt);
+		GameDraw(app.game);
 		SDL_RenderPresent(ren);
 		AppDelay(app);
 	} while (app.loopFlag != TOMENU);
 	app.loopFlag = MENU;
 }
 
+void AppMenuDraw(const App& self)
+{
+	MenuDraw(*self.currMenu);
+}
+
+void AppInGameMenuDraw(const App& self)
+{
+	GameDraw(self.game);
+	MenuDraw(*self.currMenu);
+}
+
 void MenuLoop(App& app)
 {
-	bool isInGameMenu = CurrMenuType(app) == INGAMEMENU;
 	Sint8(*UpdateFunc)(Menu&) = CurrMenuType(app) == SETTINGSMENU ? SettingsMenuUpdate : MenuUpdate;
-	Menu& menu = *app.currMenu;
+	void(*DrawFunc)(const App&) = CurrMenuType(app) == INGAMEMENU ? AppInGameMenuDraw : AppMenuDraw;
 	do
 	{
 		AppFrameStartTime(app);
 		AppHandleEvents(app);
-		app.loopFlag = UpdateFunc(menu);
-		if (isInGameMenu)
-			GameDraw(app.game);
-		MenuDraw(menu);
+		app.loopFlag = UpdateFunc(*app.currMenu);
+		DrawFunc(app);
 		SDL_RenderPresent(ren);
 		AppDelay(app);
 	} while (app.loopFlag == -1);
