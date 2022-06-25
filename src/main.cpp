@@ -2,8 +2,6 @@
 #include "Menus.h"
 #include <stdio.h>
 
-#define INGAMEMENUDRAW GameDraw(app.game); MenuDraw(menu); 
-
 typedef enum Loop
 {
 	GAME,
