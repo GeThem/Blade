@@ -24,6 +24,7 @@ extern SDL_Renderer* ren;
 extern int winW, winH;
 extern Keyboard kb;
 extern Mouse mouse;
+extern float scale;
 
 typedef struct Image
 {

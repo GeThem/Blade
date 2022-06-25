@@ -1,7 +1,6 @@
 #pragma once
 
 #include "SDL_default.h"
-#include "Entity.h"
 #include "Platform.h"
 #include "Player.h"
 #include "Platform.h"

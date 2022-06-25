@@ -8,14 +8,15 @@ Game GameInit()
 	GameLoadControls(self);
 	for (Uint8 i = 0; i < 2; i++)
 	{
-		PlayerLoadCharacter(self.players[i], "Char1.txt");
-		self.players[i].color = { (Uint8)(150 * !i), 0, (Uint8)(150 * i) };
+		Player& player = self.players[i];
+		PlayerLoadCharacter(player, "Char1.txt");
+		player.color = { (Uint8)(150 * !i), 0, (Uint8)(150 * i) };
 	}
-	self.arena[0].rect = { 0, winH - 50, winW, 50 };
-	self.arena[1] = { { 0, winH - 300, winW / 5, 20 }, false, true, true };
-	self.arena[2] = { {-50, 0, 60, winH}, true, false };
-	self.arena[3] = { {winW - 10, 0, 60, winH}, true, false };
-	self.arena[4] = { {(int)(winW * 0.5), (int)(winH * 0.6), 40, 600}, true, true };
+	self.arena[0].rect = { 0, int(scale * (800 - 50)), int(1400 * scale), int(scale * 50) };
+	self.arena[1] = { { 0, int(scale * (800 - 300)), int(1400 * scale / 5), int(scale*20) }, false, true, true };
+	self.arena[2] = { {int(scale * -50), 0, int(scale * 60), int(800 * scale)}, true, false };
+	self.arena[3] = { {int(scale * (1400 - 10)), 0, int(scale * 60), int(800 * scale)}, true, false };
+	self.arena[4] = { {(int)(1400 * scale* 0.5), (int)(800 * scale * 0.6), int(scale * 40), int(scale * 600)}, true, true };
 	return self;
 }
 
@@ -64,7 +65,7 @@ void GameRestart(Game& self)
 	for (Uint8 i = 0; i < 2; i++)
 	{
 		PlayerReboot(self.players[i]);
-		EntityMoveTo(self.players[i].ent, { (1.0f + 2.0f * i) * winW / 4.0f, winH / 5.0f });
+		EntityMoveTo(self.players[i].ent, { (1.0f + 2.0f * i) * 1400 * scale / 4.0f, 800 / 5.0f * scale});
 	}
 }
 

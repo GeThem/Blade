@@ -42,7 +42,7 @@ SwitchButton SwitchButtonInit(const SDL_Rect& rect, const char* text, TTF_Font* 
 {
 	SwitchButton self{ rect };
 	RenderText(self.textImg, font, text, { 200, 200, 200, 255 });
-	self.textImg.rect.x = self.rect.x + self.rect.w + 10;
+	self.textImg.rect.x = self.rect.x + self.rect.w + self.textImg.rect.h / 3;
 	self.textImg.rect.y = self.rect.y + (self.rect.h - self.textImg.rect.h) / 2;
 	for (int i = 0; i < 4; i++)
 		self.butStates[i] = butStates[i];

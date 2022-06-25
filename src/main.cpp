@@ -2,6 +2,8 @@
 #include "Menus.h"
 #include <stdio.h>
 
+#define INGAMEMENUDRAW GameDraw(app.game); MenuDraw(menu); 
+
 typedef enum Loop
 {
 	GAME,
@@ -57,14 +59,22 @@ bool InGameMenuLeave(Menu*& menu, Sint8& loopFlag)
 typedef struct App
 {
 	SDL_Event ev;
+	SDL_DisplayMode display;
 	Uint32 lastTime = 0, currTime = 0, lastRenderedTime = 0, dt = 0;
-	Game game = GameInit();
+	Game game;
 	Menu menus[3]{ MainMenuInit(), SettingsMenuInit(), InGameMenuInit() };
 	bool (*menuLeave[3])(Menu*&, Sint8&){ MainMenuLeave, SettingsMenuLeave, InGameMenuLeave };
 	Menu* currMenu = menus;
 	Sint8 loopFlag = MENU;
 	bool restartGame = true;
 } App;
+
+void AppInit(App& self)
+{
+	SDL_GetDesktopDisplayMode(0, &self.display);
+	scale = fmin(winW / 7.0, winH / 4.0) / 200.0;
+	self.game = GameInit();
+}
 
 MenuType CurrMenuType(App& self)
 {
@@ -108,37 +118,44 @@ void AppHandleEvents(App& self)
 
 void GameLoop(App& app)
 {
-	Game& game = app.game;
 	if (app.restartGame)
 	{
-		GameRestart(game);
+		GameRestart(app.game);
 		AppRestartTime(app);
 	}
 	do
 	{
 		AppFrameStartTime(app);
 		AppHandleEvents(app);
-		app.loopFlag = GameUpdate(game, app.dt);
-		GameDraw(game);
+		app.loopFlag = GameUpdate(app.game, app.dt);
+		GameDraw(app.game);
 		SDL_RenderPresent(ren);
 		AppDelay(app);
 	} while (app.loopFlag != TOMENU);
 	app.loopFlag = MENU;
 }
 
+void AppMenuDraw(const App& self)
+{
+	MenuDraw(*self.currMenu);
+}
+
+void AppInGameMenuDraw(const App& self)
+{
+	GameDraw(self.game);
+	MenuDraw(*self.currMenu);
+}
+
 void MenuLoop(App& app)
 {
-	bool isInGameMenu = CurrMenuType(app) == INGAMEMENU;
 	Sint8(*UpdateFunc)(Menu&) = CurrMenuType(app) == SETTINGSMENU ? SettingsMenuUpdate : MenuUpdate;
-	Menu& menu = *app.currMenu;
+	void(*DrawFunc)(const App&) = CurrMenuType(app) == INGAMEMENU ? AppInGameMenuDraw : AppMenuDraw;
 	do
 	{
 		AppFrameStartTime(app);
 		AppHandleEvents(app);
-		app.loopFlag = UpdateFunc(menu);
-		if (isInGameMenu)
-			GameDraw(app.game);
-		MenuDraw(menu);
+		app.loopFlag = UpdateFunc(*app.currMenu);
+		DrawFunc(app);
 		SDL_RenderPresent(ren);
 		AppDelay(app);
 	} while (app.loopFlag == -1);
@@ -148,25 +165,21 @@ void MenuLoop(App& app)
 void AppRun(App& self)
 {
 	if (self.loopFlag == GAME)
-	{
-		GameLoop(self);
-		return;
-	}
+		return GameLoop(self);
 	if (self.loopFlag == MENU)
-	{
-		MenuLoop(self);
-		return;
-	}
+		return MenuLoop(self);
 	Quit();
 }
 
 int main(int argc, char** argv)
 {
 	Init();
-	DisplayInit(1400, 800, "Blade");
+	//DisplayInit(1400, 800, "Blade");
+	DisplayInit(2560, 800, "Blade");
 	SDL_SetRenderDrawBlendMode(ren, SDL_BLENDMODE_BLEND);
 
 	App app;
+	AppInit(app);
 	while (true)
 	{
 		AppRun(app);

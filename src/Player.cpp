@@ -17,20 +17,20 @@ void PlayerLoadCharacter(Player& self, const char* filename)
 		*val++ = '\0';
 		
 		if (!strcmp(temp, "width"))
-			self.ent.rect.w = atoi(val);
+			self.ent.rect.w = atoi(val) * scale;
 		else if (!strcmp(temp, "height"))
-			self.ent.rect.h = atoi(val);
+			self.ent.rect.h = atoi(val) * scale;
 		else if (!strcmp(temp, "ms"))
 		{
-			self.ent.maxMS = atof(val);
-			self.ent.hVel = self.ent.maxMS / 20;
+			self.ent.maxMS = atof(val) * scale;
+			self.ent.hVel = self.ent.maxMS / 20.0f;
 		}
 		else if (!strcmp(temp, "weight"))
-			self.ent.vVel = atof(val);
+			self.ent.vVel = atof(val) * scale;
 		else if (!strcmp(temp, "hp"))
 			self.maxHP = atof(val);
 		else if (!strcmp(temp, "prbasespd"))
-			self.projBaseSpd = atof(val);
+			self.projBaseSpd = atof(val) * scale;
 		else if (!strcmp(temp, "attackcd"))
 			self.attackCD = atof(val) * 1000.0f;
 		else if (!strcmp(temp, "attackdur"))
@@ -66,8 +66,8 @@ void PlayerReboot(Player& self)
 	{
 		projectile.ent.pos = { 0, 0 };
 		projectile.ent.verMS = projectile.ent.currMS = 0;
-		projectile.ent.rect = { 0, 0, 50, 50 };
-		projectile.ent.vVel = 0.5;
+		projectile.ent.rect = { 0, 0, int(50 * scale), int(50 * scale) };
+		projectile.ent.vVel = 0.5 * scale;
 		projectile.pickCD = projectile.currPickCD = 1000;
 	}
 }

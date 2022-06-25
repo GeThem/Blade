@@ -7,6 +7,7 @@ SDL_Renderer* ren;
 int winW, winH;
 Keyboard kb;
 Mouse mouse;
+float scale;
 
 void Init(Uint32 flags)
 {
