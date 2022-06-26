@@ -60,7 +60,7 @@ typedef struct App
 	SDL_DisplayMode display;
 	Uint32 lastTime = 0, currTime = 0, lastRenderedTime = 0, dt = 0;
 	Game game;
-	Menu menus[3]{ MainMenuInit(), SettingsMenuInit(), InGameMenuInit() };
+	Menu menus[3];
 	bool (*menuLeave[3])(Menu*&, Sint8&){ MainMenuLeave, SettingsMenuLeave, InGameMenuLeave };
 	Menu* currMenu = menus;
 	Sint8 loopFlag = MENU;
@@ -69,9 +69,17 @@ typedef struct App
 
 void AppInit(App& self)
 {
+	Init();
 	SDL_GetDesktopDisplayMode(0, &self.display);
-	scale = fmin(winW / 7.0, winH / 4.0) / 200.0;
+	DisplayInit(1600, 900, "Blade");
+	SDL_SetRenderDrawBlendMode(ren, SDL_BLENDMODE_BLEND);
+	double x = fmin(winW / 16.0, winH / 9.0);
+	scale = x / (realH / 9);
+	crd0 = { (winW - int(16 * x)) / 2, (winH - int(9 * x)) / 2 };
 	self.game = GameInit();
+	self.menus[MAINMENU] = MainMenuInit();
+	self.menus[SETTINGSMENU] = SettingsMenuInit();
+	self.menus[INGAMEMENU] = InGameMenuInit();
 }
 
 MenuType CurrMenuType(App& self)
@@ -171,11 +179,6 @@ void AppRun(App& self)
 
 int main(int argc, char** argv)
 {
-	Init();
-	//DisplayInit(1400, 800, "Blade");
-	DisplayInit(2560, 800, "Blade");
-	SDL_SetRenderDrawBlendMode(ren, SDL_BLENDMODE_BLEND);
-
 	App app;
 	AppInit(app);
 	while (true)

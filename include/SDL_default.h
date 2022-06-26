@@ -2,6 +2,9 @@
 
 #define FPS 60u
 #define FRAME_DELAY (1000u / FPS)
+#define realW 1920u
+#define realH 1080u
+
 
 #include <SDL.h>
 #include <SDL_image.h>
@@ -25,6 +28,7 @@ extern int winW, winH;
 extern Keyboard kb;
 extern Mouse mouse;
 extern float scale;
+extern SDL_Point crd0;
 
 typedef struct Image
 {

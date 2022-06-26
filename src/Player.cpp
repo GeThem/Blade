@@ -64,6 +64,7 @@ void PlayerReboot(Player& self)
 	self.pressedCtrls = {};
 	for (Projectile& projectile : self.projectiles)
 	{
+		projectile.wasThrown = false;
 		projectile.ent.pos = { 0, 0 };
 		projectile.ent.verMS = projectile.ent.currMS = 0;
 		projectile.ent.rect = { 0, 0, int(50 * scale), int(50 * scale) };
@@ -89,25 +90,22 @@ void PlayerInput(Player& self)
 
 	self.pressedCtrls.thrw = OnKeyPress(self.ctrls.thrw);
 
-	if (!self.dismountLock)
-		self.isDismounting = kb.state[self.ctrls.dismount];
+	self.isDismounting = kb.state[self.ctrls.dismount];
 }
 
 void PlayerPlatformVerCollision(Player& self, Platform& platform)
 {
 	if (!platform.vCollCheck)
 		return;
-	if (self.ent.verMS < 0.0f ||
-		self.ent.rect.y - platform.rect.y > self.ent.rect.h * -0.8f ||
-		!SDL_HasIntersection(&self.ent.rect, &platform.rect))
+	if (self.ent.verMS < 0.0f || !SDL_HasIntersection(&self.ent.rect, &platform.rect))
 		return;
-	if (self.isDismounting && platform.isDismountable && self.ent.verMS > 0)
+	if (self.isDismounting && platform.isDismountable)
 	{
-		self.dismountLock = true;
-		if (self.ent.verMS + self.ent.pos.y + self.ent.rect.h * 0.9f >= platform.rect.y + platform.rect.h)
-			self.dismountLock = self.isDismounting = false;
+		self.isDismounting = false;
 		return;
 	}
+	if (int(self.ent.pos.y + self.ent.rect.h - self.ent.verMS) > platform.rect.y)
+		return;
 	self.ent.isInAir = false;
 	self.ent.verMS = 0;
 	EntityMoveTo(self.ent, { self.ent.pos.x, (float)platform.rect.y - self.ent.rect.h });
@@ -116,18 +114,23 @@ void PlayerPlatformVerCollision(Player& self, Platform& platform)
 
 void PlayerPlatformHorCollision(Player& self, Platform& platform)
 {
-	if (!platform.hCollCheck)
+	if (!platform.hCollCheck || !self.ent.currMS || !SDL_HasIntersection(&self.ent.rect, &platform.rect))
 		return;
-	SDL_Rect intersection;
-	if (!SDL_IntersectRect(&self.ent.rect, &platform.rect, &intersection))
-		return;
-	self.ent.isMoving = false;
-	self.ent.currMS = 0;
-	SDL_FPoint moveTo{ platform.rect.x, self.ent.pos.y };
-	if (EntityGetHorMid(self.ent) >= intersection.x + intersection.w / 2)
-		moveTo.x += platform.rect.w;
-	else
+	SDL_FPoint moveTo{ (float)platform.rect.x, self.ent.pos.y };
+	if (self.ent.currMS > 0)
+	{
+		if (int(self.ent.pos.x + self.ent.rect.w - self.ent.currMS) > platform.rect.x)
+			return;
 		moveTo.x -= self.ent.rect.w;
+	}
+	else
+	{
+		if (int(self.ent.pos.x - self.ent.currMS) < platform.rect.x + platform.rect.w)
+			return;
+		moveTo.x += platform.rect.w;
+	}
+	self.ent.currMS = 0;
+	self.ent.isMoving = false;
 	EntityMoveTo(self.ent, moveTo);
 	return;
 }

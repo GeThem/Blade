@@ -8,6 +8,7 @@ int winW, winH;
 Keyboard kb;
 Mouse mouse;
 float scale;
+SDL_Point crd0;
 
 void Init(Uint32 flags)
 {
