@@ -71,7 +71,7 @@ void AppInit(App& self)
 {
 	Init();
 	SDL_GetDesktopDisplayMode(0, &self.display);
-	DisplayInit(1600, 900, "Blade");
+	DisplayInit(1920, 1080, "Blade");
 	SDL_SetRenderDrawBlendMode(ren, SDL_BLENDMODE_BLEND);
 	double x = fmin(winW / 16.0, winH / 9.0);
 	scale = x / (realH / 9);

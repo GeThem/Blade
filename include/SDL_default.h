@@ -2,8 +2,8 @@
 
 #define FPS 60u
 #define FRAME_DELAY (1000u / FPS)
-#define realW 1920u
-#define realH 1080u
+#define realW 1920
+#define realH 1080
 
 
 #include <SDL.h>

@@ -26,7 +26,7 @@ typedef struct Player
 	bool isDismounting = false, dismountLock = false, isParrying = false, canParry = true;
 	PressedControls pressedCtrls;
 	Projectile projectiles[5];
-	SDL_Rect attackBox{ 0, 0, int(scale * 120), int(scale * 150 )}, hpRect;
+	SDL_Rect attackBox{ 0, 0, 120, 150 }, hpRect;
 	Controls ctrls;
 	SDL_Color color;
 } Player;

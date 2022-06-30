@@ -12,11 +12,11 @@ Game GameInit()
 		PlayerLoadCharacter(player, "Char1.txt");
 		player.color = { (Uint8)(150 * !i), 0, (Uint8)(150 * i) };
 	}
-	self.arena[0].rect = { crd0.x, crd0.y + int(scale * (realH - 50)), int(realW * scale), int(scale * 200) };
-	self.arena[1] = { {crd0.x, crd0.y + int(scale * (realH - 300)), int(realW * scale / 5), int(scale*20) }, false, true, true };
-	self.arena[2] = { {crd0.x + int(scale * -50), crd0.y, int(scale * 60), int(realH * scale)}, true, false };
-	self.arena[3] = { {crd0.x + int(scale * (realW - 10)), crd0.y, int(scale * 60), int(realH * scale)}, true, false };
-	self.arena[4] = { {crd0.x + (int)(realW * scale* 0.5), crd0.y + (int)(realH * scale * 0.6), int(scale * 40), int(scale * 600)}, true, true };
+	self.arena[0].rect = { crd0.x, crd0.y + realH - 50, realW, 200 };
+	self.arena[1] = { {crd0.x, crd0.y + realH - 300, realW / 5, 20 }, false, true, true };
+	self.arena[2] = { {crd0.x -50, crd0.y, 60, realH}, true, false };
+	self.arena[3] = { {crd0.x + realW - 10, crd0.y, int(scale * 60), realH}, true, false };
+	self.arena[4] = { {crd0.x + int(realW * 0.5), crd0.y + realH - 320, 40, 600}, true, true };
 	return self;
 }
 
@@ -65,7 +65,7 @@ void GameRestart(Game& self)
 	for (Uint8 i = 0; i < 2; i++)
 	{
 		PlayerReboot(self.players[i]);
-		EntityMoveTo(self.players[i].ent, { crd0.x + (1.0f + 2.0f * i) * realW * scale / 4.0f, crd0.y + realH / 5.0f * scale});
+		EntityMoveTo(self.players[i].ent, { crd0.x + (1.0f + 2.0f * i) * realW / 4.0f, crd0.y + realH / 5.0f });
 	}
 }
 
@@ -102,7 +102,7 @@ Sint8 GameUpdate(Game& self, const Uint16& dt)
 		player.currHP += term;
 		if (player.currHP < 0 && term < 0 || player.currHP > player.maxHP && term > 0)
 			term = -term;
-		player.hpRect = { crd0.x + int(realW * scale * i), crd0.y, (i ? -1 : 1) * (int)((realW * scale * 0.4f) / player.maxHP * player.currHP), int(scale * 50) };
+		player.hpRect = { crd0.x + realW * i, crd0.y, (i ? -1 : 1) * int(realW * 0.4f / player.maxHP * player.currHP), 50 };
 		i++;
 	}
 	

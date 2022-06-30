@@ -17,20 +17,20 @@ void PlayerLoadCharacter(Player& self, const char* filename)
 		*val++ = '\0';
 		
 		if (!strcmp(temp, "width"))
-			self.ent.rect.w = atoi(val) * scale;
+			self.ent.rect.w = atoi(val);
 		else if (!strcmp(temp, "height"))
-			self.ent.rect.h = atoi(val) * scale;
+			self.ent.rect.h = atoi(val);
 		else if (!strcmp(temp, "ms"))
 		{
-			self.ent.maxMS = atof(val) * scale;
+			self.ent.maxMS = atof(val);
 			self.ent.hVel = self.ent.maxMS / 20.0f;
 		}
 		else if (!strcmp(temp, "weight"))
-			self.ent.vVel = atof(val) * scale;
+			self.ent.vVel = atof(val);
 		else if (!strcmp(temp, "hp"))
 			self.maxHP = atof(val);
 		else if (!strcmp(temp, "prbasespd"))
-			self.projBaseSpd = atof(val) * scale;
+			self.projBaseSpd = atof(val);
 		else if (!strcmp(temp, "attackcd"))
 			self.attackCD = atof(val) * 1000.0f;
 		else if (!strcmp(temp, "attackdur"))
@@ -67,8 +67,8 @@ void PlayerReboot(Player& self)
 		projectile.wasThrown = false;
 		projectile.ent.pos = { 0, 0 };
 		projectile.ent.verMS = projectile.ent.currMS = 0;
-		projectile.ent.rect = { 0, 0, int(50 * scale), int(50 * scale) };
-		projectile.ent.vVel = 0.5 * scale;
+		projectile.ent.rect = { 0, 0, 50, 50 };
+		projectile.ent.vVel = 0.5;
 		projectile.pickCD = projectile.currPickCD = 1000;
 	}
 }
@@ -251,8 +251,7 @@ void PlayerUpdate(Player& self, Uint16 dt)
 		PlayerProcessParry(self, dt);
 	if (!self.isAttacking && !self.isParrying || !self.canEvade)
 		PlayerProcessEvade(self, dt);
-	if (!self.isAttacking && !self.isEvading && !self.isParrying)
-		PlayerProcessProjectiles(self, dt);
+	PlayerProcessProjectiles(self, dt);
 }
 
 void PlayerDraw(const Player& self)
@@ -262,14 +261,31 @@ void PlayerDraw(const Player& self)
 	else
 		SDL_SetRenderDrawColor(ren, self.color.r, self.color.g, self.color.b, 255);
 	
+	SDL_Rect drawRect = self.ent.rect;
+	drawRect.x = ceilf(drawRect.x * scale);
+	drawRect.y = ceilf(drawRect.y * scale);
+	drawRect.w = ceilf(drawRect.w * scale);
+	drawRect.h = ceilf(drawRect.h * scale);
+
 	if (!self.isEvading)
-		SDL_RenderFillRect(ren, &self.ent.rect);
+		SDL_RenderFillRect(ren, &drawRect);
+	
+	SDL_Rect attackRect = self.attackBox;
+	attackRect.x = ceilf(attackRect.x * scale);
+	attackRect.y = ceilf(attackRect.y * scale);
+	attackRect.w = ceilf(attackRect.w * scale);
+	attackRect.h = ceilf(attackRect.h * scale);
 	
 	if (self.isAttacking)
 	{
 		SDL_SetRenderDrawColor(ren, 0, 150, 0, 255);
-		SDL_RenderFillRect(ren, &self.attackBox);
+		SDL_RenderFillRect(ren, &attackRect);
 	}
 	SDL_SetRenderDrawColor(ren, 200, 50, 50, 255);
-	SDL_RenderFillRect(ren, &self.hpRect);
+	SDL_Rect hpRect= self.hpRect;
+	hpRect.x = ceilf(hpRect.x * scale);
+	hpRect.y = ceilf(hpRect.y * scale);
+	hpRect.w = ceilf(hpRect.w * scale);
+	hpRect.h = ceilf(hpRect.h * scale);
+	SDL_RenderFillRect(ren, &hpRect);
 }
