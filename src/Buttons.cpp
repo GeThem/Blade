@@ -16,7 +16,12 @@ TextButton TextButtonInit(const SDL_Rect& rect, const char* text, TTF_Font* font
 
 bool TextButtonUpdate(TextButton& self)
 {
-	if (!SDL_PointInRect(&mouse.pos, &self.rect))
+	SDL_Rect rect = self.rect;
+	rect.x = ceilf(rect.x * scale + crd0.x);
+	rect.y = ceilf(rect.y * scale + crd0.y);
+	rect.w = ceilf(rect.w * scale);
+	rect.h = ceilf(rect.h * scale);
+	if (!SDL_PointInRect(&mouse.pos, &rect))
 	{
 		self.currState = self.butStates;
 		return false;
@@ -33,9 +38,19 @@ void TextButtonDraw(const TextButton& self)
 {
 	SDL_Color* c = self.currState;
 	SDL_SetRenderDrawColor(ren, c->r, c->g, c->b, c->a);
-	SDL_RenderFillRect(ren, &self.rect);
+	SDL_Rect drawRect = self.rect;
+	drawRect.x = ceilf(drawRect.x * scale + crd0.x);
+	drawRect.y = ceilf(drawRect.y * scale + crd0.y);
+	drawRect.w = ceilf(drawRect.w * scale);
+	drawRect.h = ceilf(drawRect.h * scale);
+	SDL_RenderFillRect(ren, &drawRect);
 	SDL_SetTextureAlphaMod(self.textImg.texture, c->a);
-	SDL_RenderCopy(ren, self.textImg.texture, NULL, &self.textImg.rect);
+	drawRect = self.textImg.rect;
+	drawRect.x = ceilf(drawRect.x * scale + crd0.x);
+	drawRect.y = ceilf(drawRect.y * scale + crd0.y);
+	drawRect.w = ceilf(drawRect.w * scale);
+	drawRect.h = ceilf(drawRect.h * scale);
+	SDL_RenderCopy(ren, self.textImg.texture, NULL, &drawRect);
 }
 
 SwitchButton SwitchButtonInit(const SDL_Rect& rect, const char* text, TTF_Font* font, const SDL_Color* butStates)
@@ -53,7 +68,12 @@ SwitchButton SwitchButtonInit(const SDL_Rect& rect, const char* text, TTF_Font* 
 
 bool SwitchButtonUpdate(SwitchButton& self)
 {
-	if (!SDL_PointInRect(&mouse.pos, &self.rect))
+	SDL_Rect rect = self.rect;
+	rect.x = ceilf(rect.x * scale + crd0.x);
+	rect.y = ceilf(rect.y * scale + crd0.y);
+	rect.w = ceilf(rect.w * scale);
+	rect.h = ceilf(rect.h * scale);
+	if (!SDL_PointInRect(&mouse.pos, &rect))
 	{
 		self.currState = self.butStates + (self.isActivated ? PRESSED : INACTIVE);
 		return self.isActivated;
@@ -72,6 +92,16 @@ void SwitchButtonDraw(const SwitchButton& self)
 {
 	SDL_Color* c = self.currState;
 	SDL_SetRenderDrawColor(ren, c->r, c->g, c->b, c->a);
-	SDL_RenderFillRect(ren, &self.rect);
-	SDL_RenderCopy(ren, self.textImg.texture, NULL, &self.textImg.rect);
+	SDL_Rect drawRect = self.rect;
+	drawRect.x = ceilf(drawRect.x * scale + crd0.x);
+	drawRect.y = ceilf(drawRect.y * scale + crd0.y);
+	drawRect.w = ceilf(drawRect.w * scale);
+	drawRect.h = ceilf(drawRect.h * scale);
+	SDL_RenderFillRect(ren, &drawRect);
+	drawRect = self.textImg.rect;
+	drawRect.x = ceilf(drawRect.x * scale + crd0.x);
+	drawRect.y = ceilf(drawRect.y * scale + crd0.y);
+	drawRect.w = ceilf(drawRect.w * scale);
+	drawRect.h = ceilf(drawRect.h * scale);
+	SDL_RenderCopy(ren, self.textImg.texture, NULL, &drawRect);
 }

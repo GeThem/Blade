@@ -45,6 +45,7 @@ void DisplayInit(int win_w, int win_h, const char* name = "A window", SDL_Window
 void DisplayQuit();
 
 void ScreenFill(Uint8 r, Uint8 g, Uint8 b, Uint8 a = 255);
+void BlackStrips();
 
 void KeyboardUpdate();
 bool OnKeyPress(const SDL_Scancode&);

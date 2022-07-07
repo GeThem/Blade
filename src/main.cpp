@@ -135,6 +135,7 @@ void GameLoop(App& app)
 		AppHandleEvents(app);
 		app.loopFlag = GameUpdate(app.game, app.dt);
 		GameDraw(app.game);
+		BlackStrips();
 		SDL_RenderPresent(ren);
 		AppDelay(app);
 	} while (app.loopFlag != TOMENU);
@@ -162,6 +163,7 @@ void MenuLoop(App& app)
 		AppHandleEvents(app);
 		app.loopFlag = UpdateFunc(*app.currMenu);
 		DrawFunc(app);
+		BlackStrips();
 		SDL_RenderPresent(ren);
 		AppDelay(app);
 	} while (app.loopFlag == -1);

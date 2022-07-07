@@ -11,7 +11,7 @@
 typedef struct Game
 {
 	Player players[2];
-	Platform arena[5];
+	Platform arena[10];
 } Game;
 
 void GameLoadControls(Game&);

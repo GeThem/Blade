@@ -77,6 +77,19 @@ void ScreenFill(Uint8 r, Uint8 g, Uint8 b, Uint8 a)
 	SDL_RenderFillRect(ren, &rect);
 }
 
+void BlackStrips()
+{
+	SDL_SetRenderDrawColor(ren, 0, 0, 0, 255);
+	SDL_Rect rect = { 0, 0, crd0.x, winH };
+	SDL_RenderFillRect(ren, &rect);
+	rect = { crd0.x, 0, winW - crd0.x, crd0.y };
+	SDL_RenderFillRect(ren, &rect);
+	rect = { crd0.x, winH - crd0.y, winW - crd0.x, crd0.y };
+	SDL_RenderFillRect(ren, &rect);
+	rect = { winW - crd0.x, crd0.y, crd0.x, winH - crd0.y * 2 };
+	SDL_RenderFillRect(ren, &rect);
+}
+
 int RectGetVerMid(const SDL_Rect& self)
 {
 	return self.y + self.h / 2;

@@ -12,11 +12,12 @@ Game GameInit()
 		PlayerLoadCharacter(player, "Char1.txt");
 		player.color = { (Uint8)(150 * !i), 0, (Uint8)(150 * i) };
 	}
-	self.arena[0].rect = { crd0.x, crd0.y + realH - 50, realW, 200 };
-	self.arena[1] = { {crd0.x, crd0.y + realH - 300, realW / 5, 20 }, false, true, true };
-	self.arena[2] = { {crd0.x -50, crd0.y, 60, realH}, true, false };
-	self.arena[3] = { {crd0.x + realW - 10, crd0.y, int(scale * 60), realH}, true, false };
-	self.arena[4] = { {crd0.x + int(realW * 0.5), crd0.y + realH - 320, 40, 600}, true, true };
+	self.arena[0].rect = { 0, realH - 50, realW, 200 };
+	self.arena[1] = { {0, realH - 300, realW / 5, 20 }, false, true, true };
+	self.arena[2] = { {-50, 0, 60, realH}, true, false };
+	self.arena[3] = { {realW - 10, 0, 60, realH}, true, false };
+	self.arena[4] = { {int(realW * 0.5), realH - 320, 40, 600}, true, true };
+	self.arena[5] = { {0, realH - 500, realW / 5, 20 }, false, true, true };
 	return self;
 }
 
@@ -102,7 +103,7 @@ Sint8 GameUpdate(Game& self, const Uint16& dt)
 		player.currHP += term;
 		if (player.currHP < 0 && term < 0 || player.currHP > player.maxHP && term > 0)
 			term = -term;
-		player.hpRect = { crd0.x + realW * i, crd0.y, (i ? -1 : 1) * int(realW * 0.4f / player.maxHP * player.currHP), 50 };
+		player.hpRect = { realW * i, 0, (i ? -1 : 1) * int(realW * 0.4f / player.maxHP * player.currHP), 50 };
 		i++;
 	}
 	

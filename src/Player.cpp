@@ -262,8 +262,8 @@ void PlayerDraw(const Player& self)
 		SDL_SetRenderDrawColor(ren, self.color.r, self.color.g, self.color.b, 255);
 	
 	SDL_Rect drawRect = self.ent.rect;
-	drawRect.x = ceilf(drawRect.x * scale);
-	drawRect.y = ceilf(drawRect.y * scale);
+	drawRect.x = ceilf(drawRect.x * scale + crd0.x);
+	drawRect.y = ceilf(drawRect.y * scale + crd0.y);
 	drawRect.w = ceilf(drawRect.w * scale);
 	drawRect.h = ceilf(drawRect.h * scale);
 
@@ -271,8 +271,8 @@ void PlayerDraw(const Player& self)
 		SDL_RenderFillRect(ren, &drawRect);
 	
 	SDL_Rect attackRect = self.attackBox;
-	attackRect.x = ceilf(attackRect.x * scale);
-	attackRect.y = ceilf(attackRect.y * scale);
+	attackRect.x = ceilf(attackRect.x * scale + crd0.x);
+	attackRect.y = ceilf(attackRect.y * scale + crd0.y);
 	attackRect.w = ceilf(attackRect.w * scale);
 	attackRect.h = ceilf(attackRect.h * scale);
 	
@@ -282,9 +282,9 @@ void PlayerDraw(const Player& self)
 		SDL_RenderFillRect(ren, &attackRect);
 	}
 	SDL_SetRenderDrawColor(ren, 200, 50, 50, 255);
-	SDL_Rect hpRect= self.hpRect;
-	hpRect.x = ceilf(hpRect.x * scale);
-	hpRect.y = ceilf(hpRect.y * scale);
+	SDL_Rect hpRect = self.hpRect;
+	hpRect.x = ceilf(hpRect.x * scale + crd0.x);
+	hpRect.y = ceilf(hpRect.y * scale + crd0.y);
 	hpRect.w = ceilf(hpRect.w * scale);
 	hpRect.h = ceilf(hpRect.h * scale);
 	SDL_RenderFillRect(ren, &hpRect);
