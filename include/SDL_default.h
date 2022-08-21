@@ -10,6 +10,8 @@
 #include <SDL_image.h>
 #include <SDL_ttf.h>
 
+#include <iostream>
+
 typedef struct Mouse
 {
 	SDL_Point pos;
@@ -32,7 +34,7 @@ extern SDL_Point crd0;
 
 typedef struct Image
 {
-	SDL_Texture* texture;
+	SDL_Texture* texture = NULL;
 	SDL_Rect rect{ 0, 0 };
 } Image;
 
@@ -62,3 +64,7 @@ Image LoadImage(const char* filename);
 SDL_Texture* LoadTexture(const char* filename, SDL_Rect*);
 
 void RenderText(Image& textImg, TTF_Font* font, const char* string, const SDL_Color&);
+
+void ImageDestroy(Image&);
+
+SDL_Rect RectTransformForCurrWin(SDL_Rect);

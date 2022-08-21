@@ -1,5 +1,7 @@
 #pragma once
 
+#include "SDL_default.h"
+
 typedef enum ButtonStates
 {
 	INACTIVE = 0,

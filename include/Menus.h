@@ -1,5 +1,8 @@
 #pragma once
 
+#include <random>
+#include <time.h>
+
 #include "Buttons.h"
 
 typedef enum MButtons

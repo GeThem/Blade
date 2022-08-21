@@ -8,7 +8,7 @@ typedef struct Projectile
 {
 	Entity ent;
 	bool isPickable = false, wasThrown = false;
-	float damage;
+	float atk;
 	float pickCD, currPickCD;
 } Projectile;
 

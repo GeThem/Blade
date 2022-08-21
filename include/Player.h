@@ -1,5 +1,9 @@
 #pragma once
 
+#include <string.h>
+#include <atlfile.h>
+
+#include "utils.h"
 #include "SDL_default.h"
 #include "Platform.h"
 #include "Projectile.h"
@@ -20,13 +24,19 @@ typedef struct PressedControls
 typedef struct Player
 {
 	Entity ent;
+	char status[50] = "right";
 	float maxHP, currHP, projBaseSpd, currEvadeDur, evadeDur, evadeCD, currEvadeCD;
-	int attackCD, currAttCD, attackDur, currAttDur, parryCD, currParrCD, parryDur, currParrDur;
+	int atkCD, currAtkCD, atkDur, currAtkDur, parryCD, currParrCD, parryDur, currParrDur;
+	int atkDelay;
 	bool isAttacking = false, canAttack = true, isThrowing = false, isEvading = false, canEvade = true;
-	bool isDismounting = false, dismountLock = false, isParrying = false, canParry = true;
+	bool isDismounting = false, dismountLock = false, isParrying = false, canParry = true, isDealingDmg = false;
+	bool isDisabled = false;
+	bool isBusy = false;
+	bool canDealDmg = true;
 	PressedControls pressedCtrls;
 	Projectile projectiles[5];
 	SDL_Rect attackBox{ 0, 0, 120, 150 }, hpRect;
+	int atk;
 	Controls ctrls;
 	SDL_Color color;
 } Player;
@@ -41,6 +51,8 @@ void PlayerProcessAttack(Player&, Uint16 dt);
 void PlayerProcessParry(Player&, Uint16 dt);
 void PlayerProcessEvade(Player&, Uint16 dt);
 
+void PlayerCooldowns(Player&, Uint16 dt);
+
 void PlayerProcessProjectiles(Player&, Uint16 dt);
 
 void PlayerPlatformVerCollision(Player&, Platform&);
@@ -49,3 +61,5 @@ void PlayerPlatformHorCollision(Player&, Platform&);
 void PlayerUpdate(Player&, Uint16 dt);
 
 void PlayerDraw(const Player&);
+
+int PlayerTakeHit(Player&, int atk);

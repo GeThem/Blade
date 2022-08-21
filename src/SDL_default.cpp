@@ -1,9 +1,7 @@
-#include <stdio.h>
-
 #include "SDL_default.h"
 
-SDL_Window* win;
-SDL_Renderer* ren;
+SDL_Window* win = NULL;
+SDL_Renderer* ren = NULL;
 int winW, winH;
 Keyboard kb;
 Mouse mouse;
@@ -156,9 +154,23 @@ void RenderText(Image& textImg, TTF_Font* font, const char* string, const SDL_Co
 	if (textImg.texture != NULL)
 		SDL_DestroyTexture(textImg.texture);
 	SDL_Surface* surface = TTF_RenderText_Blended(font, string, color);
-	SDL_Texture* texture = SDL_CreateTextureFromSurface(ren, surface);
-	textImg.texture = texture;
+	textImg.texture = SDL_CreateTextureFromSurface(ren, surface);
 	textImg.rect.w = surface->w;
 	textImg.rect.h = surface->h;
+	SDL_SetTextureBlendMode(textImg.texture, SDL_BLENDMODE_BLEND);
 	SDL_FreeSurface(surface);
+}
+
+void ImageDestroy(Image& self)
+{
+	SDL_DestroyTexture(self.texture);
+}
+
+SDL_Rect RectTransformForCurrWin(SDL_Rect rect)
+{
+	rect.x = ceilf(rect.x * scale + crd0.x);
+	rect.y = ceilf(rect.y * scale + crd0.y);
+	rect.w = ceilf(rect.w * scale);
+	rect.h = ceilf(rect.h * scale);
+	return rect;
 }

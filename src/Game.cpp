@@ -1,5 +1,3 @@
-#include <atlfile.h>
-
 #include "Game.h"
 
 Game GameInit()
@@ -68,6 +66,7 @@ void GameRestart(Game& self)
 		PlayerReboot(self.players[i]);
 		EntityMoveTo(self.players[i].ent, { crd0.x + (1.0f + 2.0f * i) * realW / 4.0f, crd0.y + realH / 5.0f });
 	}
+	ListClear(self.texts);
 }
 
 void GameHandleArenaCollisions(Game& self)
@@ -85,7 +84,7 @@ void GameHandleArenaCollisions(Game& self)
 			PlayerPlatformVerCollision(player, platform);
 			PlayerPlatformHorCollision(player, platform);
 		
-			if (player.isAttacking && SDL_HasIntersection(&platform.rect, &player.attackBox))
+			if (player.isAttacking && player.atkDur != player.currAtkDur && SDL_HasIntersection(&platform.rect, &player.attackBox))
 				PlayerAttackPenalty(player, 2);
 		}
 	}
@@ -95,23 +94,63 @@ Sint8 GameUpdate(Game& self, const Uint16& dt)
 {
 	if (OnKeyPress(SDL_SCANCODE_ESCAPE))
 		return TOMENU;
-	static float term = -0.1;
-	int i = 0;
+
+	for (VLElem* curr = self.texts.curr; curr; )
+	{
+		VanishTextUpdate(curr->val, dt);
+		if (curr->val.alpha == 0 && curr->val.existTime <= 0)
+		{
+			VanishTextDestroy(curr->val);
+			ListRemoveCurrent(self.texts);
+			curr = self.texts.curr;
+			continue;
+		}
+		curr = ListNext(self.texts);
+	}
+
+	for (Player& player : self.players)
+	{
+		PlayerInput(player);
+		EntityUpdate(player.ent);
+	}
+	GameHandleArenaCollisions(self);
 	for (Player& player : self.players)
 	{
 		PlayerUpdate(player, dt);
-		player.currHP += term;
-		if (player.currHP < 0 && term < 0 || player.currHP > player.maxHP && term > 0)
-			term = -term;
-		player.hpRect = { realW * i, 0, (i ? -1 : 1) * int(realW * 0.4f / player.maxHP * player.currHP), 50 };
-		i++;
 	}
 	
-	GameHandleArenaCollisions(self);
+	if (self.players[0].isDealingDmg && self.players[0].canDealDmg
+		&& SDL_HasIntersection(&self.players[0].attackBox, &self.players[1].ent.rect))
+	{
+		self.players[0].canDealDmg = false;
+		int takenDmg = PlayerTakeHit(self.players[1], self.players[0].atk);
+		char buffer[30];
+		sprintf_s(buffer, "%i", takenDmg);
+		TTF_Font* font = TTF_OpenFont("data/fonts/JetBrainsMono-Bold.ttf", 50);
+		VanishText txt = VanishTextGenerate(
+			buffer, font, { 200, 200, 200 },
+			RandFloat(0.5, 0.7), RandFloat(-10, -12), RandFloat(-10, 10), 0, 0.3, 0.3
+		);
+		VanishTextSetPos(
+			txt,
+			{ (int)EntityGetHorMid(self.players[1].ent) - txt.txtImg.rect.w / 2, 
+			int(EntityGetVerMid(self.players[1].ent) - 100 * scale) }
+		);
+		
+		ListAppend(self.texts, txt);
+
+	}
+
+	for (int i = 0; i < 2; i++)
+	{
+		Player& player = self.players[i];
+		player.hpRect = { realW * i, 0, (i ? -1 : 1) * int(realW * 0.4f / player.maxHP * player.currHP), 50 };
+	}
+
 	return 0;
 }
 
-void GameDraw(const Game& self)
+void GameDraw(Game& self)
 {
 	ScreenFill(3, 186, 252);
 	for (const Player& player : self.players)
@@ -123,6 +162,11 @@ void GameDraw(const Game& self)
 	
 	for (const Player& player : self.players)
 		PlayerDraw(player);
+
+	for (VLElem* curr = self.texts.curr; curr; curr = ListNext(self.texts))
+	{
+		VanishTextDraw(curr->val);
+	}
 }
 
 void GameQuit()

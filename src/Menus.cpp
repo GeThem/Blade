@@ -49,9 +49,8 @@ Menu SettingsMenuInit()
 	self.textButtons = (TextButton*)malloc(sizeof(TextButton) * self.textButtonsCount);
 	self.textButtons[SM_SAVE] = TextButtonInit({ realW / 2 - 600, realH / 2 + 250, 500, 100}, "SAVE", font, TBStates);
 	self.textButtons[SM_BACK] = TextButtonInit({ realW / 2 + 100, realH / 2 + 250, 500, 100}, "BACK", font, TBStates);
-	TTF_CloseFont(font);
 	
-	font = TTF_OpenFont("data/fonts/JetBrainsMono-Bold.ttf", 50);
+	TTF_SetFontSize(font, 50);
 	self.switchButtonsCount = 1;
 	SDL_Color SBStates[4]{ {100, 100, 100, 255}, {120, 120, 120, 255}, {180, 180, 180, 255}, {200, 200, 200, 255} };
 	self.switchButtons = (SwitchButton*)malloc(sizeof(SwitchButton) * self.switchButtonsCount);

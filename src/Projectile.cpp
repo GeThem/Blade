@@ -59,11 +59,7 @@ void ProjectileDraw(const Projectile& self)
 {
 	if (!self.wasThrown)
 		return;
-	SDL_Rect drawRect = self.ent.rect;
-	drawRect.x = ceilf(drawRect.x * scale + crd0.x);
-	drawRect.y = ceilf(drawRect.y * scale + crd0.y);
-	drawRect.h = ceilf(drawRect.h * scale);
-	drawRect.w = ceilf(drawRect.w * scale);
 	SDL_SetRenderDrawColor(ren, 100, 100, 0, 255);
+	SDL_Rect drawRect = RectTransformForCurrWin(self.ent.rect);
 	SDL_RenderFillRect(ren, &drawRect);
 }
