@@ -6,9 +6,6 @@
 typedef struct VanishText
 {
 	SDL_FPoint pos;
-	TTF_Font* font;
-	SDL_Color color;
-	char text[30];
 	float vSpd, hSpd, vVel;
 	float appearTick, vanishTick;
 	int existTime;

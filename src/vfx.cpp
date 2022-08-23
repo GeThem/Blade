@@ -9,13 +9,10 @@ VanishText VanishTextGenerate(
 	self.vVel = vVel;
 	self.hSpd = hSpd;
 	self.vSpd = vSpd;
-	self.font = font;
-	self.color = color;
-	strcpy_s(self.text, text);
 	self.appearTick = ceilf(255.0f / (appearTime * FPS));
 	self.vanishTick = ceilf(255.0f / (vanishTime * FPS));
 	self.existTime = existTime * 1000;
-	self.color.a = self.alpha = 1;
+	self.alpha = color.a;
 
 	//if (self.txtImg.texture != NULL)
 	//	SDL_DestroyTexture(self.txtImg.texture);
@@ -32,7 +29,7 @@ VanishText VanishTextGenerate(
 	//SDL_FreeSurface(surface);
 	//TTF_SetFontOutline(font, 0);
 
-	RenderText(self.txtImg, font, text, self.color);
+	RenderText(self.txtImg, font, text, color);
 	return self;
 }
 
@@ -61,8 +58,8 @@ void VanishTextUpdate(VanishText& self, const Uint16& dt)
 		self.existTime -= dt;
 		return;
 	}
-	self.color.a = self.alpha;
-	RenderText(self.txtImg, self.font, self.text, self.color);
+	self.alpha;
+	SDL_SetTextureAlphaMod(self.txtImg.texture, self.alpha);
 }
 
 void VanishTextSetPos(VanishText& self, const SDL_Point& pos)
@@ -73,7 +70,6 @@ void VanishTextSetPos(VanishText& self, const SDL_Point& pos)
 
 void VanishTextDestroy(VanishText& self)
 {
-	TTF_CloseFont(self.font);
 	ImageDestroy(self.txtImg);
 }
 

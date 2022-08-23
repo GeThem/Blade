@@ -16,9 +16,11 @@
 
 typedef struct Game
 {
+	int time = 9000;
 	Player players[2];
 	Platform arena[10];
 	VList texts;
+	TTF_Font* playersInteractionsFont = TTF_OpenFont("data/fonts/JetBrainsMono-Bold.ttf", 30);
 } Game;
 
 void GameLoadControls(Game&);

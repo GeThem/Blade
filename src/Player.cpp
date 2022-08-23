@@ -4,6 +4,9 @@ void PlayerLoadCharacter(Player& self, const char* filename)
 {
 	char temp[40] = "data/characters/";
 	strcat_s(temp, filename);
+	
+	self.atks = (Attack*)malloc(sizeof(Attack));
+	
 	FILE* file;
 	if (fopen_s(&file, temp, "r"))
 		exit(0);
@@ -29,9 +32,9 @@ void PlayerLoadCharacter(Player& self, const char* filename)
 		else if (!strcmp(temp, "projectile spd"))
 			self.projBaseSpd = atof(val);
 		else if (!strcmp(temp, "atk cd"))
-			self.atkCD = atof(val) * 1000.0f;
+			self.atks[0].CD = atof(val) * 1000.0f;
 		else if (!strcmp(temp, "full atk dur"))
-			self.atkDur = atof(val) * 1000.0f;
+			self.atks[0].dur = atof(val) * 1000.0f;
 		else if (!strcmp(temp, "parry cd"))
 			self.parryCD = atof(val) * 1000.0f;
 		else if (!strcmp(temp, "parry dur"))
@@ -41,10 +44,16 @@ void PlayerLoadCharacter(Player& self, const char* filename)
 		else if (!strcmp(temp, "evade dur"))
 			self.evadeDur = atof(val) * 1000.0f;
 		else if (!strcmp(temp, "atk delay"))
-			self.atkDelay = atof(val) * 1000.0f;
+			self.atks[0].delay = atof(val) * 1000.0f;
 		else if (!strcmp(temp, "atk"))
-			self.atk = atof(val);
+			self.atks[0].dmg = atof(val);
 	}
+
+	self.chargeAtk.CD = 0.5 * 1000;
+	self.chargeAtk.dur = 0.3 * 1000;
+	self.chargeAtk.delay = 0.1 * 1000;
+	self.chargeAtk.dmg = 20;
+
 	fclose(file);
 }
 
@@ -53,8 +62,8 @@ void PlayerReboot(Player& self)
 	self.currHP = self.maxHP;
 	self.currEvadeDur = self.evadeDur;
 	self.currEvadeCD = self.evadeCD;
-	self.currAtkCD = self.atkCD;
-	self.currAtkDur = self.atkDur;
+	PlayerResetChargeAttack(self);
+	PlayerResetAttacks(self, self.numberOfAttacks);
 	self.currParrCD = self.parryCD;
 	self.currParrDur = self.parryDur;
 	self.isAttacking = self.isThrowing = self.isEvading = self.isDismounting = self.dismountLock = self.isParrying = false;
@@ -76,8 +85,15 @@ void PlayerReboot(Player& self)
 
 void PlayerInput(Player& self)
 {
-	if (self.isBusy || self.isDisabled)
+	if (self.isDisabled)
 		return;
+
+	if (self.isBusy)
+	{
+		if (self.isChrgAttacking)
+			self.isHoldingAtk = KeyHold(self.ctrls.chargeAtk);
+		return;
+	}
 
 	self.ent.isMoving = kb.state[self.ctrls.left] + kb.state[self.ctrls.right] == 1;
 	if (self.ent.isMoving)
@@ -91,22 +107,32 @@ void PlayerInput(Player& self)
 		self.ent.isInAir = true;
 		//strcat_s(self.status, "_jump");
 	}
-	if (OnKeyPress(self.ctrls.attack) && self.canAttack)
+	if (OnKeyPress(self.ctrls.chargeAtk) && self.canAttack)
+	{
+		self.isBusy = self.isChrgAttacking = self.isHoldingAtk = true;
+		self.canAttack = false;
+		self.ent.isMoving = false;
+		return;
+	}
+	if (OnKeyPress(self.ctrls.attack))
 	{
 		self.isBusy = self.isAttacking = true;
 		self.canAttack = false;
 		self.ent.isMoving = false;
 		//strcat_s(self.status, "_attack");
+		return;
 	}
-	else if (OnKeyPress(self.ctrls.parry) && self.canParry)
+	if (OnKeyPress(self.ctrls.parry) && self.canParry)
 	{
 		self.isBusy = self.isParrying = true;
 		self.canParry = false;
+		return;
 	}
-	else if (OnKeyPress(self.ctrls.evade) && self.canEvade)
+	if (OnKeyPress(self.ctrls.evade) && self.canEvade)
 	{
 		self.isBusy = self.isEvading = true;
 		self.canEvade = false;
+		return;
 	}
 	self.pressedCtrls.thrw = OnKeyPress(self.ctrls.thrw);
 
@@ -156,21 +182,71 @@ void PlayerPlatformHorCollision(Player& self, Platform& platform)
 	return;
 }
 
-void PlayerProcessAttack(Player& self, Uint16 dt)
+void PlayerResetAttacks(Player& self, int number)
 {
-	self.currAtkDur -= dt;
-	if (self.currAtkDur > 0)
+	for (int i = 0; i < number; i++)
 	{
-		if (self.atkDur - self.currAtkDur > self.atkDelay)
+		self.atks[i].currCD = self.atks[i].CD;
+		self.atks[i].currDur = self.atks[i].dur;
+	}
+	self.canAttack = true;
+	self.canDealDmg = true;
+	self.isDealingDmg = false;
+}
+
+void PlayerResetChargeAttack(Player& self)
+{
+	self.chargeAtk.currCD = self.chargeAtk.CD;
+	self.chargeAtk.currDur = self.chargeAtk.dur;
+	self.chargeAtk.chargeTime = 0;
+	self.canAttack = true;
+	self.canDealDmg = true;
+	self.isDealingDmg = false;
+}
+
+void PlayerProcessAttack(Player& self, Attack& atk, Uint16 dt)
+{
+	atk.currDur -= dt;
+	if (atk.currDur > 0)
+	{
+		if (atk.dur - atk.currDur > atk.delay)
+		{
 			self.isDealingDmg = true;
-		if (!self.ent.isInAir && self.currAtkDur == self.atkDur)
+			self.attackBox.x = self.ent.rect.x + (self.ent.dir == 1 ? self.ent.rect.w : -self.attackBox.w);
+			self.attackBox.y = self.ent.pos.y;
+		}
+		if (!self.ent.isInAir && atk.currDur == atk.dur)
 			self.ent.currMS = 0;
-		self.attackBox.x = self.ent.rect.x + (self.ent.dir == 1 ? self.ent.rect.w : -self.attackBox.w);
-		self.attackBox.y = self.ent.pos.y;
 		return;
 	}
+	self.canDealDmg = true;
 	self.isAttacking = self.isBusy = self.isDealingDmg = false;
 	//StrReplace(self.status, "_attack", "");
+}
+
+void PlayerProcessChargeAttack(Player& self, Uint16 dt)
+{
+	chrgAtk& atk = self.chargeAtk;
+	if (self.isHoldingAtk && atk.currDur == atk.dur)
+	{
+		atk.chargeTime += dt;
+		return;
+	}
+	atk.currDur -= dt;
+	if (atk.currDur > 0)
+	{
+		if (atk.dur - atk.currDur > atk.delay)
+		{
+			self.isDealingDmg = true;
+			self.attackBox.x = self.ent.rect.x + (self.ent.dir == 1 ? self.ent.rect.w : -self.attackBox.w);
+			self.attackBox.y = self.ent.pos.y;
+		}
+		if (!self.ent.isInAir && atk.currDur == atk.dur)
+			self.ent.currMS = 0;
+		return;
+	}
+	self.canDealDmg = true;
+	self.isChrgAttacking = self.isBusy = self.isDealingDmg = false;
 }
 
 void PlayerProcessParry(Player& self, Uint16 dt)
@@ -227,23 +303,38 @@ void PlayerProcessProjectiles(Player& self, Uint16 dt)
 void PlayerAttackPenalty(Player& self, float duration)
 {
 	duration *= 1000.0f;
-	self.canAttack = self.isAttacking = self.isBusy = false;
-	self.currAtkDur = 0;
-	self.currAtkCD = duration;
+	self.canAttack = self.isAttacking = self.isBusy = self.isDealingDmg = false;
+	self.atks[0].currDur = 0;
+	self.atks[0].currCD = duration;
 	//replace(self.status, "_attack", "");
 }
 
-void PlayerAttackCooldown(Player& self, Uint16 dt)
+bool PlayerAttackCooldown(Player& self, Attack& atk, Uint16 dt)
 {
-	if (self.currAtkDur > 0)
-		return;
-	self.currAtkCD -= dt;
-	if (self.currAtkCD > 0)
-		return;
-	self.currAtkCD = self.atkCD;
-	self.currAtkDur = self.atkDur;
+	if (atk.currDur > 0)
+		return false;
+	atk.currCD -= dt;
+	if (atk.currCD > 0)
+		return false;
+	atk.currCD = atk.CD;
+	atk.currDur = atk.dur;
 	self.canAttack = true;
-	self.canDealDmg = true;
+	return true;
+}
+
+void PlayerChrgAttackCooldown(Player& self, Uint16 dt)
+{
+	chrgAtk& atk = self.chargeAtk;
+	if (atk.currDur > 0)
+		return;
+	atk.currCD -= dt;
+	if (atk.currCD > 0)
+		return;
+	atk.currCD = atk.CD;
+	atk.currDur = atk.dur;
+	atk.chargeTime = 0;
+	self.canAttack = true;
+	return;
 }
 
 void PlayerParryCooldown(Player& self, Uint16 dt)
@@ -270,19 +361,14 @@ void PlayerEvadeCooldown(Player& self, Uint16 dt)
 	self.canEvade = true;
 }
 
-void PlayerCooldowns(Player& self, Uint16 dt)
-{
-	PlayerAttackCooldown(self, dt);
-	PlayerParryCooldown(self, dt);
-	PlayerEvadeCooldown(self, dt);
-}
-
 void PlayerUpdate(Player& self, Uint16 dt)
 {
 	if (!self.isDisabled && self.isBusy)
 	{
 		if (self.isAttacking)
-			PlayerProcessAttack(self, dt);
+			PlayerProcessAttack(self, self.atks[self.currAtk], dt);
+		else if (self.isChrgAttacking)
+			PlayerProcessChargeAttack(self, dt);
 		else if (self.isParrying)
 			PlayerProcessParry(self, dt);
 		else if (self.isEvading)
@@ -290,13 +376,34 @@ void PlayerUpdate(Player& self, Uint16 dt)
 	}
 	PlayerProcessProjectiles(self, dt);
 	
-	PlayerCooldowns(self, dt);
+	if (PlayerAttackCooldown(self, self.atks[self.currAtk], dt))
+		self.currAtk = (self.currAtk + 1) % self.numberOfAttacks;
+	PlayerChrgAttackCooldown(self, dt);
+	PlayerParryCooldown(self, dt);
+	PlayerEvadeCooldown(self, dt);
 }
 
-int PlayerTakeHit(Player& self, int atk)
+VanishText PlayerSpawnText(Player& self, const char* text, TTF_Font* font, int size, const SDL_Color& color)
 {
-	self.currHP -= atk;
-	return atk;
+	TTF_SetFontSize(font, size);
+	VanishText txt = VanishTextGenerate(
+		text, font, { 200, 200, 200 },
+		RandFloat(0.5, 0.7), RandFloat(-10, -12), RandFloat(-7, 7), 0, 0.3, 0.3
+	);
+	VanishTextSetPos(
+		txt,
+		{ (int)EntityGetHorMid(self.ent) - txt.txtImg.rect.w / 2 + RandInt(-10, 10),
+		int(EntityGetVerMid(self.ent) - 100 * scale) + RandInt(-10, 10) }
+	);
+
+	return txt;
+}
+
+int PlayerTakeHit(Player& self, int dmg, bool blockable)
+{
+	int takenDmg = dmg;
+	self.currHP -= takenDmg;
+	return takenDmg;
 }
 
 void PlayerDraw(const Player& self)

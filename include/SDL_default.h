@@ -51,6 +51,7 @@ void BlackStrips();
 
 void KeyboardUpdate();
 bool OnKeyPress(const SDL_Scancode&);
+bool KeyHold(const SDL_Scancode& key);
 
 void MouseUpdate();
 bool OnButtonRelease(const Uint8 buttonMask);

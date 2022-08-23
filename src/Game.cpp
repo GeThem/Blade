@@ -49,6 +49,8 @@ void GameLoadControls(Game& self)
 			self.players[playerN].ctrls.dismount = SDL_GetScancodeFromName(val);
 		else if (!strcmp(temp, "attack"))
 			self.players[playerN].ctrls.attack = SDL_GetScancodeFromName(val);
+		else if (!strcmp(temp, "charge attack"))
+			self.players[playerN].ctrls.chargeAtk = SDL_GetScancodeFromName(val);
 		else if (!strcmp(temp, "throw"))
 			self.players[playerN].ctrls.thrw = SDL_GetScancodeFromName(val);
 		else if (!strcmp(temp, "parry"))
@@ -84,7 +86,7 @@ void GameHandleArenaCollisions(Game& self)
 			PlayerPlatformVerCollision(player, platform);
 			PlayerPlatformHorCollision(player, platform);
 		
-			if (player.isAttacking && player.atkDur != player.currAtkDur && SDL_HasIntersection(&platform.rect, &player.attackBox))
+			if (player.isDealingDmg && player.atks[0].dur != player.atks[0].currDur && SDL_HasIntersection(&platform.rect, &player.attackBox))
 				PlayerAttackPenalty(player, 2);
 		}
 	}
@@ -118,27 +120,20 @@ Sint8 GameUpdate(Game& self, const Uint16& dt)
 	{
 		PlayerUpdate(player, dt);
 	}
-	
+	// ATTACK
 	if (self.players[0].isDealingDmg && self.players[0].canDealDmg
 		&& SDL_HasIntersection(&self.players[0].attackBox, &self.players[1].ent.rect))
 	{
 		self.players[0].canDealDmg = false;
-		int takenDmg = PlayerTakeHit(self.players[1], self.players[0].atk);
-		char buffer[30];
-		sprintf_s(buffer, "%i", takenDmg);
-		TTF_Font* font = TTF_OpenFont("data/fonts/JetBrainsMono-Bold.ttf", 50);
-		VanishText txt = VanishTextGenerate(
-			buffer, font, { 200, 200, 200 },
-			RandFloat(0.5, 0.7), RandFloat(-10, -12), RandFloat(-10, 10), 0, 0.3, 0.3
-		);
-		VanishTextSetPos(
-			txt,
-			{ (int)EntityGetHorMid(self.players[1].ent) - txt.txtImg.rect.w / 2, 
-			int(EntityGetVerMid(self.players[1].ent) - 100 * scale) }
-		);
 		
-		ListAppend(self.texts, txt);
+		int atk = self.players[0].isAttacking ? self.players[0].atks[self.players[0].currAtk].dmg :
+			self.players[0].chargeAtk.dmg * min(1 + 0.002f * max(0, self.players[0].chargeAtk.chargeTime - 100), 2);
 
+		char buffer[30];
+		sprintf_s(buffer, "%i", PlayerTakeHit(self.players[1], atk));
+		VanishText txt = PlayerSpawnText(self.players[1], buffer, self.playersInteractionsFont,
+			RandInt(37, 43), { 200, 200, 200 });
+		ListAppend(self.texts, txt);
 	}
 
 	for (int i = 0; i < 2; i++)
