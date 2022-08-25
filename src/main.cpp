@@ -71,7 +71,7 @@ void AppChangeResolution(App& self, const SDL_Point& resolution)
 	winW = resolution.x;
 	winH = resolution.y;
 	SDL_SetWindowSize(win, winW, winH);
-	SDL_SetWindowPosition(win, (self.display.w - winW) / 2, (self.display.h - winH) / 2);
+	//SDL_SetWindowPosition(win, (self.display.w - winW) / 2, (self.display.h - winH) / 2);
 	double x = fmin(winW / 16.0, winH / 9.0);
 	scale = x / (realH / 9);
 	crd0 = { (winW - int(16 * x)) / 2, (winH - int(9 * x)) / 2 };
@@ -82,12 +82,11 @@ void AppInit(App& self)
 	srand(time(0));
 	Init();
 	SDL_GetDesktopDisplayMode(0, &self.display);
-	DisplayInit(1920, 1080, "Blade");
+	DisplayInit(1920, 1080, "Blade", SDL_WindowFlags(SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE));
 	SDL_SetRenderDrawBlendMode(ren, SDL_BLENDMODE_BLEND);
 	double x = fmin(winW / 16.0, winH / 9.0);
 	scale = x / (realH / 9);
 	crd0 = { (winW - int(16 * x)) / 2, (winH - int(9 * x)) / 2 };
-	self.game = GameInit();
 	self.menus[MAINMENU] = MainMenuInit();
 	self.menus[SETTINGSMENU] = SettingsMenuInit();
 	self.menus[INGAMEMENU] = InGameMenuInit();
@@ -129,6 +128,13 @@ void AppHandleEvents(App& self)
 		{
 		case SDL_QUIT:
 			Quit();
+		case SDL_WINDOWEVENT:
+			if (self.ev.window.event == SDL_WINDOWEVENT_RESIZED)
+			{
+				int w, h;
+				SDL_GetRendererOutputSize(ren, &w, &h);
+				AppChangeResolution(self, { w, h });
+			}
 		}
 	}
 }
@@ -143,11 +149,14 @@ void GameLoop(App& app)
 	do
 	{
 		AppFrameStartTime(app);
+
 		GameDraw(app.game);
 		BlackStrips();
 		SDL_RenderPresent(ren);
+
 		AppHandleEvents(app);
 		app.loopFlag = GameUpdate(app.game, app.dt);
+
 		AppDelay(app);
 	} while (app.loopFlag != TOMENU);
 	app.loopFlag = MENU;
@@ -189,9 +198,23 @@ void MenuLoop(App& app)
 		SDL_RenderPresent(ren);
 		AppDelay(app);
 	} while (app.loopFlag == -1);
-	if (isSettingsMenu && app.currMenu->switchButtons[0].isActivated && app.loopFlag == SM_SAVE)
+	if (isSettingsMenu && app.loopFlag == SM_SAVE)
 	{
-		AppChangeResolution(app, { RandInt(800, 2560), RandInt(600, 1440) });
+		if (app.currMenu->switchButtons[0].isActivated)
+			SDL_SetWindowFullscreen(win, SDL_WINDOW_FULLSCREEN_DESKTOP);
+		else
+		{
+			SDL_SetWindowFullscreen(win, 0);
+			AppChangeResolution(app, { 1920, 1080 });
+		}
+	}
+	if (CurrMenuType(app) == MAINMENU && app.loopFlag == GAME)
+	{
+		GameInit(app.game);
+	}
+	if (CurrMenuType(app) == INGAMEMENU && app.loopFlag == IG_BACKTOMENU)
+	{
+		GameClose(app.game);
 	}
 	app.restartGame = app.menuLeave[CurrMenuType(app)](app.currMenu, app.loopFlag);
 }

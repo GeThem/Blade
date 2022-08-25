@@ -1,22 +1,24 @@
 #include "Game.h"
 
-Game GameInit()
+void GameInit(Game& self)
 {
-	Game self;
+	self.playersInteractionsFont = TTF_OpenFont("data/fonts/JetBrainsMono-Bold.ttf", 30);
 	GameLoadControls(self);
 	for (Uint8 i = 0; i < 2; i++)
 	{
 		Player& player = self.players[i];
-		PlayerLoadCharacter(player, "Char1.txt");
+		PlayerLoadCharacter(player, "Char1");
+		PlayerLoadCharacterSprites(player, "Fantasy Warrior");
+		PlayerReboot(player);
 		player.color = { (Uint8)(150 * !i), 0, (Uint8)(150 * i) };
 	}
 	self.arena[0].rect = { 0, realH - 50, realW, 200 };
-	self.arena[1] = { {0, realH - 300, realW / 5, 20 }, false, true, true };
+	self.arena[1] = { {0, realH - 250, realW / 5, 20 }, false, true, true };
 	self.arena[2] = { {-50, 0, 60, realH}, true, false };
 	self.arena[3] = { {realW - 10, 0, 60, realH}, true, false };
-	self.arena[4] = { {int(realW * 0.5), realH - 320, 40, 600}, true, true };
-	self.arena[5] = { {0, realH - 500, realW / 5, 20 }, false, true, true };
-	return self;
+	self.arena[4] = { {int(realW * 0.5), realH - 200, 40, 600}, true, true };
+	self.arena[5] = { {0, realH - 400, realW / 5, 20 }, false, true, true };
+	self.arena[6] = { {650, realH - 520, realW / 6, 20 }, false, true, true };
 }
 
 void GameLoadControls(Game& self)
@@ -86,8 +88,6 @@ void GameHandleArenaCollisions(Game& self)
 			PlayerPlatformVerCollision(player, platform);
 			PlayerPlatformHorCollision(player, platform);
 		
-			if (player.isDealingDmg && player.atks[0].dur != player.atks[0].currDur && SDL_HasIntersection(&platform.rect, &player.attackBox))
-				PlayerAttackPenalty(player, 2);
 		}
 	}
 }
@@ -121,26 +121,36 @@ Sint8 GameUpdate(Game& self, const Uint16& dt)
 		PlayerUpdate(player, dt);
 	}
 	// ATTACK
-	if (self.players[0].isDealingDmg && self.players[0].canDealDmg
-		&& SDL_HasIntersection(&self.players[0].attackBox, &self.players[1].ent.rect))
+	Player& p1 = self.players[0], &p2 = self.players[1];
+	if (p1.isDealingDmg && p1.canDealDmg && SDL_HasIntersection(&p1.atks[p1.currAtk].hitbox, &p2.ent.rect))
 	{
-		self.players[0].canDealDmg = false;
+		p1.canDealDmg = false;
 		
-		int atk = self.players[0].isAttacking ? self.players[0].atks[self.players[0].currAtk].dmg :
-			self.players[0].chargeAtk.dmg * min(1 + 0.002f * max(0, self.players[0].chargeAtk.chargeTime - 100), 2);
-
+		Attack& atk = strstr(p1.status, "_attack") ? p1.atks[p1.currAtk] : p1.atks[0];
+			//: p1.chargeAtk.dmg * min(1 + 0.002f * max(0, p1.chargeAtk.chargeTime - 100), 2);
 		char buffer[30];
-		sprintf_s(buffer, "%i", PlayerTakeHit(self.players[1], atk));
-		VanishText txt = PlayerSpawnText(self.players[1], buffer, self.playersInteractionsFont,
-			RandInt(37, 43), { 200, 200, 200 });
+		sprintf_s(buffer, "%i", PlayerTakeHit(p2, atk, EntityGetHorMid(p1.ent) < EntityGetHorMid(p2.ent) ? 1 : -1));
+		VanishText txt = PlayerSpawnText(p2, buffer, self.playersInteractionsFont, RandInt(17, 24) + atk.dmg, { 230, 230, 230 });
 		ListAppend(self.texts, txt);
 	}
 
+
 	for (int i = 0; i < 2; i++)
 	{
+		Player& p1 = self.players[0];
+		//if (i == 0)
+		//std::cout << p1.atks[p1.currAtk].betweenHitsTime << "  " << (int)p1.currAtk << "  " << p1.status << "  " << p1.currSprite << '\n';
 		Player& player = self.players[i];
+		//if (i == 0)
+		//	std::cout << player.ent.currMS << '\n';
+		//if (i == 0)
+		//	std::cout << p1.currSprite << '\n';
+		PlayerAnimate(player, dt);
 		player.hpRect = { realW * i, 0, (i ? -1 : 1) * int(realW * 0.4f / player.maxHP * player.currHP), 50 };
+		//if (i == 0)
+		//std::cout << p1.currSprite->image.texture << '\n';
 	}
+
 
 	return 0;
 }
@@ -164,7 +174,12 @@ void GameDraw(Game& self)
 	}
 }
 
-void GameQuit()
+void GameClose(Game& self)
 {
-	Quit();
+	for (Player& player : self.players)
+	{
+		PlayerClear(player);
+	}
+	ListClear(self.texts);
+	TTF_CloseFont(self.playersInteractionsFont);
 }

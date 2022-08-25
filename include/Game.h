@@ -20,12 +20,12 @@ typedef struct Game
 	Player players[2];
 	Platform arena[10];
 	VList texts;
-	TTF_Font* playersInteractionsFont = TTF_OpenFont("data/fonts/JetBrainsMono-Bold.ttf", 30);
+	TTF_Font* playersInteractionsFont;
 } Game;
 
 void GameLoadControls(Game&);
 
-Game GameInit();
+void GameInit(Game&);
 
 void GameRestart(Game&);
 
@@ -35,4 +35,4 @@ Sint8 GameUpdate(Game&, const Uint16& dt);
 
 void GameDraw(Game&);
 
-void GameQuit();
+void GameClose(Game&);

@@ -53,5 +53,6 @@ VLElem* ListNext(VList& self)
 
 void ListClear(VList& self)
 {
+	self.curr = self.head;
 	for (; self.head; ListRemoveCurrent(self));
 }

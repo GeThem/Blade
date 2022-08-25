@@ -1,7 +1,7 @@
 #pragma once
 
-#define FPS 60u
-#define FRAME_DELAY (1000u / FPS)
+#define FPS 60
+#define FRAME_DELAY (1000 / FPS)
 #define realW 1920
 #define realH 1080
 
@@ -60,7 +60,7 @@ bool OnClick(const Uint8 buttonMask);
 int RectGetVerMid(const SDL_Rect&);
 int RectGetHorMid(const SDL_Rect&);
 
-Image LoadImage(const char* filename);
+Image ImageLoad(const char* filename);
 
 SDL_Texture* LoadTexture(const char* filename, SDL_Rect*);
 

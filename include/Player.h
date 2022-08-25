@@ -22,9 +22,26 @@ typedef struct PressedControls
 	bool attack = false, thrw = false, parry = false;
 } PressedControls;
 
+typedef enum Animations
+{
+	IDLE, RUN, JUMP, FALL, HIT, SLIDE, EVADE
+} Animations;
+
+typedef struct AnimatedSprite
+{
+	Image image;
+	int frameTime, timeElapsed = 0, frameWdt, frameHgt, dur;
+	Uint8 frameCount;
+	SDL_Rect currFrame;
+	SDL_RendererFlip flip = SDL_FLIP_NONE;
+} AnimatedSprite;
+
 typedef struct Attack
 {
-	int CD, currCD, dur, currDur, delay;
+	AnimatedSprite sprite;
+	SDL_Rect hitbox;
+	SDL_Point hitboxOffset;
+	int CD, currCD, dur, currDur, delay, postAtkDur, betweenHitsTime = 0, stunDur;
 	float dmg, staminaCost;
 } Attack;
 
@@ -35,42 +52,34 @@ typedef struct chrgAtk
 	float dmg, staminaCost;
 } chrgAtk;
 
-typedef enum Animations
-{
-	IDLE, MOVE, JUMP, FALL, HIT, EVADE
-} Animations;
-
-typedef struct AnimatedSprite
-{
-	SDL_Texture* texture = NULL;
-	int frameTime, timeElapsed = 0, wdt, hgt, offsetX, offsetY;
-	Uint8 currFrame, frameCount;
-} AnimatedSprite;
-
 typedef struct Player
 {
 	Entity ent;
-	Uint8 numberOfAttacks = 1, currAtk = 0;
+	Uint8 numberOfAttacks;
+	Sint8  currAtk = 0;
 	Attack* atks;
+	SDL_Point spriteOffset;
+	AnimatedSprite* currSprite;
+	AnimatedSprite anims[6];
 	chrgAtk chargeAtk;
 	bool isHoldingAtk = false;
-	char status[50] = "right";
+	char status[80] = "right";
 	float maxHP, currHP, projBaseSpd, currEvadeDur, evadeDur, evadeCD, currEvadeCD;
-	int parryCD, currParrCD, parryDur, currParrDur;
-	bool isAttacking = false, canAttack = true, isThrowing = false, isEvading = false, canEvade = true;
-	bool isDismounting = false, dismountLock = false, isParrying = false, canParry = true, isDealingDmg = false;
-	bool isDisabled = false;
-	bool isBusy = false, isChrgAttacking;
-	bool canDealDmg = true;
+	int parryCD, currParrCD, parryDur, currParrDur, disableDur;
+	bool isBusy = false;
+	bool canAttack = true, canDealDmg = true, isDealingDmg = false, isThrowing = false, canEvade = true;
+	bool isDismounting = false, canParry = true;
+	bool isDisabled = false, isStunned = false;
 	PressedControls pressedCtrls;
 	Projectile projectiles[5];
-	SDL_Rect attackBox{ 0, 0, 120, 150 }, hpRect, staminaRect;
+	SDL_Rect attackBox{ 0, 0, 120, 140 }, hpRect, staminaRect;
 	//int atk;
 	Controls ctrls;
 	SDL_Color color;
 } Player;
 
 void PlayerLoadCharacter(Player&, const char* filename);
+void PlayerLoadCharacterSprites(Player&, const char* name);
 void PlayerReboot(Player&);
 
 void PlayerInput(Player&);
@@ -88,10 +97,15 @@ void PlayerProcessProjectiles(Player&, Uint16 dt);
 void PlayerPlatformVerCollision(Player&, Platform&);
 void PlayerPlatformHorCollision(Player&, Platform&);
 
+void PlayerDisableElapse(Player&, Uint16 dt);
+
 void PlayerUpdate(Player&, Uint16 dt);
 
 void PlayerDraw(const Player&);
 
-int PlayerTakeHit(Player&, int dmg, bool blockable = true);
+int PlayerTakeHit(Player&, Attack&, int dir);
 
 VanishText PlayerSpawnText(Player& self, const char* text, TTF_Font*, int size, const SDL_Color&);
+void PlayerAnimate(Player&, Uint16 dt);
+
+void PlayerClear(Player&);

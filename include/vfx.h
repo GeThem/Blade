@@ -6,11 +6,13 @@
 typedef struct VanishText
 {
 	SDL_FPoint pos;
-	float vSpd, hSpd, vVel;
-	float appearTick, vanishTick;
+	float appearRate, vanishRate, sizeDecreaseRate;
 	int existTime;
-	float alpha;
+	int finalSize, currentSize;
+	int alpha;
 	Image txtImg;
+
+	float ratio;
 } VanishText;
 
 typedef struct VLElem
@@ -25,8 +27,8 @@ typedef struct VList
 } VList;
 
 VanishText VanishTextGenerate(
-	const char* text, TTF_Font* font, const SDL_Color&, float vVel, float vSpd,
-	float hSpd, float appearTime, float vanishTime, float existTime
+	const char* text, TTF_Font* font, int size, const SDL_Color&,
+	float appearTime, float vanishTime, float existTime
 );
 
 void VanishTextUpdate(VanishText&, const Uint16& dt);

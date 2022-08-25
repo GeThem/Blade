@@ -130,7 +130,7 @@ bool OnClick(const Uint8 buttonMask)
 	return mouse.buttons & buttonMask && !(mouse.buttonsLast & buttonMask);
 }
 
-Image LoadImage(const char* filename)
+Image ImageLoad(const char* filename)
 {
 	Image image;
 	image.texture = LoadTexture(filename, &image.rect);

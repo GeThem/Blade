@@ -7,6 +7,7 @@ throw=q
 attack=f
 evade=e
 parry=t
+charge attack=g
 
 player=2
 jump=i
@@ -15,5 +16,6 @@ left=j
 right=l
 throw=p
 attack=u
+charge attack=y
 evade=o
 parry=h
