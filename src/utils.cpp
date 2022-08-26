@@ -25,21 +25,11 @@ int RandInt(int min, int max)
 	return min + rand() % (max - min);
 }
 
-char* FileGetValue(FILE* file, char* string, int bufferSize)
+char* StrSplitInTwo(char*& stringPointer, char splitBy)
 {
-	fgets(string, 40, file);
-	char* val = strchr(string, '=');
-	if (!val)
-		return NULL;
-	*val++ = '\0';
-	return val;
-}
-
-char* StrSplitInTwo(char* string, char splitBy)
-{
-	char* val = strchr(string, splitBy);
-	if (!val)
-		return NULL;
-	*val++ = '\0';
+	char* val = stringPointer;
+	stringPointer = strchr(stringPointer, splitBy);
+	if (stringPointer)
+		*stringPointer++ = '\0';
 	return val;
 }

@@ -7,13 +7,22 @@ VanishText VanishTextGenerate(
 {
 	VanishText self;
 	self.alpha = 1;
-	TTF_SetFontSize(font, size);
-	RenderText(self.txtImg, font, text, {color.r, color.g, color.b, 255});
+	if (font == NULL)
+	{
+		font = TTF_OpenFont("data/fonts/JetBrainsMono-Bold.ttf", size);
+		RenderText(self.txtImg, font, text, { color.r, color.g, color.b, 255 });
+		TTF_CloseFont(font);
+	}
+	else
+	{
+		TTF_SetFontSize(font, size);
+		RenderText(self.txtImg, font, text, {color.r, color.g, color.b, 255});
+	}
 	self.finalSize = self.txtImg.rect.h;
 	self.currentSize = self.finalSize * 5;
 
-	self.appearRate = ceilf(255.0f / (appearTime * FPS));
-	self.vanishRate = ceilf(255.0f / (vanishTime * FPS));
+	self.appearRate = 51.5f;
+	self.vanishRate = 255.0f / (vanishTime * FPS);
 	self.sizeDecreaseRate = ceilf((self.currentSize - self.finalSize) / float(appearTime * FPS));
 	self.existTime = existTime * 1000;
 
@@ -26,7 +35,7 @@ VanishText VanishTextGenerate(
 
 void VanishTextUpdate(VanishText& self, const Uint16& dt)
 {
-	if (self.existTime > 0 && self.alpha < 255)
+	if (self.existTime > 0 && self.currentSize != self.finalSize)
 	{
 		self.alpha += self.appearRate;
 		if (self.alpha > 255)
@@ -49,12 +58,13 @@ void VanishTextUpdate(VanishText& self, const Uint16& dt)
 	else
 	{
 		self.existTime -= dt;
+		VanishTextSetPos(self, { self.pos.x, self.pos.y - 0.1f });
 		return;
 	}
 	SDL_SetTextureAlphaMod(self.txtImg.texture, self.alpha);
 }
 
-void VanishTextSetPos(VanishText& self, const SDL_Point& pos)
+void VanishTextSetPos(VanishText& self, const SDL_FPoint& pos)
 {
 	self.pos.x = pos.x;
 	self.pos.y = pos.y;

@@ -32,6 +32,7 @@ VanishText VanishTextGenerate(
 );
 
 void VanishTextUpdate(VanishText&, const Uint16& dt);
-void VanishTextSetPos(VanishText&, const SDL_Point& pos);
+//Set pos for the center of the text
+void VanishTextSetPos(VanishText&, const SDL_FPoint& pos);
 void VanishTextDestroy(VanishText&);
 void VanishTextDraw(const VanishText&);

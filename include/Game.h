@@ -17,6 +17,7 @@
 typedef struct Game
 {
 	int time = 9000;
+	Player* drawPriority[2];
 	Player players[2];
 	Platform arena[10];
 	VList texts;

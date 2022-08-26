@@ -30,18 +30,26 @@ typedef enum Animations
 typedef struct AnimatedSprite
 {
 	Image image;
-	int frameTime, timeElapsed = 0, frameWdt, frameHgt, dur;
+	int frameTime, timeElapsed = 0, frameWdt, dur;
 	Uint8 frameCount;
 	SDL_Rect currFrame;
 	SDL_RendererFlip flip = SDL_FLIP_NONE;
 } AnimatedSprite;
 
+typedef enum AttackDir
+{
+	BACKWARD = -1,
+	FORWARD = 1,
+	BOTH = 0
+};
+
 typedef struct Attack
 {
+	Sint8 dir;
 	AnimatedSprite sprite;
 	SDL_Rect hitbox;
 	SDL_Point hitboxOffset;
-	int CD, currCD, dur, currDur, delay, postAtkDur, betweenHitsTime = 0, stunDur;
+	int CD, currCD, dur, currDur, delay, postAtkDur, stunDur;
 	float dmg, staminaCost;
 } Attack;
 
@@ -56,13 +64,13 @@ typedef struct Player
 {
 	Entity ent;
 	Uint8 numberOfAttacks;
-	Sint8  currAtk = 0;
+	Sint8 currAtk = 0;
 	Attack* atks;
 	SDL_Point spriteOffset;
 	AnimatedSprite* currSprite;
 	AnimatedSprite anims[6];
 	chrgAtk chargeAtk;
-	bool isHoldingAtk = false;
+	bool isHoldingAtk = false, isHoldingParry = false;
 	char status[80] = "right";
 	float maxHP, currHP, projBaseSpd, currEvadeDur, evadeDur, evadeCD, currEvadeCD;
 	int parryCD, currParrCD, parryDur, currParrDur, disableDur;
@@ -70,6 +78,8 @@ typedef struct Player
 	bool canAttack = true, canDealDmg = true, isDealingDmg = false, isThrowing = false, canEvade = true;
 	bool isDismounting = false, canParry = true;
 	bool isDisabled = false, isStunned = false;
+	bool canMove = true;
+	SDL_Rect plungeRect;
 	PressedControls pressedCtrls;
 	Projectile projectiles[5];
 	SDL_Rect attackBox{ 0, 0, 120, 140 }, hpRect, staminaRect;
@@ -107,5 +117,9 @@ int PlayerTakeHit(Player&, Attack&, int dir);
 
 VanishText PlayerSpawnText(Player& self, const char* text, TTF_Font*, int size, const SDL_Color&);
 void PlayerAnimate(Player&, Uint16 dt);
+
+void PlayerDisable(Player&, float dur);
+
+void PlayerCancelParry(Player&);
 
 void PlayerClear(Player&);

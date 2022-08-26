@@ -129,11 +129,13 @@ void AppHandleEvents(App& self)
 		case SDL_QUIT:
 			Quit();
 		case SDL_WINDOWEVENT:
-			if (self.ev.window.event == SDL_WINDOWEVENT_RESIZED)
+			switch (self.ev.window.event)
+		case SDL_WINDOWEVENT_RESIZED:
 			{
 				int w, h;
 				SDL_GetRendererOutputSize(ren, &w, &h);
 				AppChangeResolution(self, { w, h });
+				break;
 			}
 		}
 	}
