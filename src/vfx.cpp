@@ -47,19 +47,22 @@ void VanishTextUpdate(VanishText& self, const Uint16& dt)
 		self.txtImg.rect.w = self.currentSize * self.ratio;
 		self.txtImg.rect.x = self.pos.x - self.txtImg.rect.w / 2;
 		self.txtImg.rect.y = self.pos.y - self.txtImg.rect.h / 2;
-
-	}
-	else if (self.existTime <= 0)
-	{
-		self.alpha -= self.vanishRate;
-		if (self.alpha < 0)
-			self.alpha = 0;
 	}
 	else
 	{
-		self.existTime -= dt;
-		VanishTextSetPos(self, { self.pos.x, self.pos.y - 0.1f });
-		return;
+		if (self.isMoving)
+			VanishTextSetPos(self, { self.pos.x, self.pos.y - 0.4f });
+		if (self.existTime <= 0)
+		{
+			self.alpha -= self.vanishRate;
+			if (self.alpha < 0)
+				self.alpha = 0;
+		}
+		else
+		{
+			self.existTime -= dt;
+			return;
+		}
 	}
 	SDL_SetTextureAlphaMod(self.txtImg.texture, self.alpha);
 }

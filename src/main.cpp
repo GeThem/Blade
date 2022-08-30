@@ -64,6 +64,7 @@ typedef struct App
 	Menu* currMenu = menus;
 	Sint8 loopFlag = MENU;
 	bool restartGame = true;
+	char characters[2][20] { "Fantasy Warrior", "" };
 } App;
 
 void AppChangeResolution(App& self, const SDL_Point& resolution)
@@ -177,24 +178,13 @@ void AppInGameMenuDraw(App& self)
 
 void MenuLoop(App& app)
 {
-	bool isSettingsMenu;
-	Sint8(*UpdateFunc)(Menu&);
-	if (CurrMenuType(app) == SETTINGSMENU)
-	{
-		UpdateFunc = SettingsMenuUpdate;
-		isSettingsMenu = true;
-	}
-	else
-	{
-		UpdateFunc = MenuUpdate;
-		isSettingsMenu = false;
-	}
+	bool isSettingsMenu = CurrMenuType(app) == SETTINGSMENU;
 	void(*DrawFunc)(App&) = CurrMenuType(app) == INGAMEMENU ? AppInGameMenuDraw : AppMenuDraw;
 	do
 	{
 		AppFrameStartTime(app);
 		AppHandleEvents(app);
-		app.loopFlag = UpdateFunc(*app.currMenu);
+		app.loopFlag = app.currMenu->UpdateFunc(*app.currMenu);
 		DrawFunc(app);
 		BlackStrips();
 		SDL_RenderPresent(ren);
@@ -212,7 +202,7 @@ void MenuLoop(App& app)
 	}
 	if (CurrMenuType(app) == MAINMENU && app.loopFlag == GAME)
 	{
-		GameInit(app.game);
+		GameInit(app.game, app.characters[0], app.characters[0], "");
 	}
 	if (CurrMenuType(app) == INGAMEMENU && app.loopFlag == IG_BACKTOMENU)
 	{

@@ -10,6 +10,11 @@
 #include "Projectile.h"
 #include "Entity.h"
 
+#define MIN_PARRY_DUR 170
+#define MIN_CHARGE_TIME 100
+#define STAMINA_RECHARGE_CD 700
+#define STAMINA_RECHARGE_RATE 0.6
+
 typedef struct Controls
 {
 	SDL_Scancode left, right, jump, dismount, evade;
@@ -24,7 +29,7 @@ typedef struct PressedControls
 
 typedef enum Animations
 {
-	IDLE, RUN, JUMP, FALL, HIT, SLIDE, EVADE
+	IDLE, RUN, JUMP, FALL, HIT, DEATH
 } Animations;
 
 typedef struct AnimatedSprite
@@ -55,52 +60,57 @@ typedef struct Attack
 
 typedef struct chrgAtk
 {
-	int CD, currCD, dur, currDur, delay;
+	Attack atk;
+	AnimatedSprite chrgSprite;
+	int prePlungeFrameCount = 0;
 	int chargeTime = 0;
-	float dmg, staminaCost;
 } chrgAtk;
 
 typedef struct Player
 {
 	Entity ent;
 	Uint8 numberOfAttacks;
-	Sint8 currAtk = 0;
+	Sint8 currAtkIndex = 0;
+	Attack* currAtk;
 	Attack* atks;
 	SDL_Point spriteOffset;
 	AnimatedSprite* currSprite;
 	AnimatedSprite anims[6];
-	chrgAtk chargeAtk;
+	chrgAtk chargeAtk[2];
+	int critRate = 25;
 	bool isHoldingAtk = false, isHoldingParry = false;
 	char status[80] = "right";
-	float maxHP, currHP, projBaseSpd, currEvadeDur, evadeDur, evadeCD, currEvadeCD;
+	float projBaseSpd, currEvadeDur, evadeDur, evadeCD, currEvadeCD, currStamina;
+	int maxHP, currHP, maxStamina;
 	int parryCD, currParrCD, parryDur, currParrDur, disableDur;
 	bool isBusy = false;
-	bool canAttack = true, canDealDmg = true, isDealingDmg = false, isThrowing = false, canEvade = true;
+	bool isDealingDmg = false, isThrowing = false, canEvade = true;
 	bool isDismounting = false, canParry = true;
 	bool isDisabled = false, isStunned = false;
-	bool canMove = true;
+	bool canMove = true, canAttack = true, canDealDmg = true, canCharge = true;
+	int currStaminaCD = 0;
 	SDL_Rect plungeRect;
 	PressedControls pressedCtrls;
 	Projectile projectiles[5];
-	SDL_Rect attackBox{ 0, 0, 120, 140 }, hpRect, staminaRect;
+	SDL_Rect hpBar, staminaBar;
 	//int atk;
 	Controls ctrls;
 	SDL_Color color;
 } Player;
 
-void PlayerLoadCharacter(Player&, const char* filename);
+void PlayerLoadCharacter(Player&, const char* name);
 void PlayerLoadCharacterSprites(Player&, const char* name);
 void PlayerReboot(Player&);
 
 void PlayerInput(Player&);
 //Duration in secs
 void PlayerAttackPenalty(Player&, float duration);
-void PlayerProcessAttack(Player&, Attack&, Uint16 dt);
+bool PlayerProcessAttack(Player&, Attack&, Uint16 dt);
 void PlayerProcessParry(Player&, Uint16 dt);
 void PlayerProcessEvade(Player&, Uint16 dt);
 
 void PlayerResetAttacks(Player&, int number);
-void PlayerResetChargeAttack(Player&);
+void PlayerResetChargeAttack(Player&, int type);
 
 void PlayerProcessProjectiles(Player&, Uint16 dt);
 
@@ -108,12 +118,15 @@ void PlayerPlatformVerCollision(Player&, Platform&);
 void PlayerPlatformHorCollision(Player&, Platform&);
 
 void PlayerDisableElapse(Player&, Uint16 dt);
+void PlayerDecreaseStamina(Player&, float amount);
+void PlayerStaminaRecharge(Player&, Uint16 dt);
 
 void PlayerUpdate(Player&, Uint16 dt);
 
 void PlayerDraw(const Player&);
 
-int PlayerTakeHit(Player&, Attack&, int dir);
+VanishText PlayerAttack(Player& self, Player& target, TTF_Font* font);
+int PlayerTakeHit(Player&, int dmg, int stunDur, int dir, int pushPower);
 
 VanishText PlayerSpawnText(Player& self, const char* text, TTF_Font*, int size, const SDL_Color&);
 void PlayerAnimate(Player&, Uint16 dt);

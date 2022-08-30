@@ -26,7 +26,7 @@ typedef struct Game
 
 void GameLoadControls(Game&);
 
-void GameInit(Game&);
+void GameInit(Game&, const char* p1, const char* p2, const char* map);
 
 void GameRestart(Game&);
 

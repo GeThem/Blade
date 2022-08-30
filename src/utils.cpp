@@ -17,12 +17,12 @@ void StrReplace(char* text, const char* substring, const char* replaceWith)
 
 float RandFloat(float min, float max)
 {
-	return min + float(rand()) / (RAND_MAX / (max - min));
+	return min + float(rand()) / (RAND_MAX / (max - min + 1));
 }
 
 int RandInt(int min, int max)
 {
-	return min + rand() % (max - min);
+	return min + rand() % (max - min + 1);
 }
 
 char* StrSplitInTwo(char*& stringPointer, char splitBy)

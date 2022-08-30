@@ -23,6 +23,7 @@ typedef struct Menu
 	SwitchButton* switchButtons = NULL;
 	Uint8 textButtonsCount = 0, switchButtonsCount = 0, escReturn;
 	SDL_Color Background;
+	Sint8(*UpdateFunc)(Menu&) = NULL;
 } Menu;
 
 Sint8 MenuUpdate(Menu&);

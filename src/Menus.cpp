@@ -4,6 +4,8 @@
 Menu MainMenuInit()
 {
 	Menu self;
+	self.UpdateFunc = MenuUpdate;
+
 	self.Background = { 60, 60, 60, 255 };
 	self.escReturn = MM_EXIT;
 	
@@ -22,6 +24,8 @@ Menu MainMenuInit()
 Menu InGameMenuInit()
 {
 	Menu self;
+	self.UpdateFunc = MenuUpdate;
+
 	self.Background = { 60, 60, 60, 150 };
 	self.escReturn = IG_RESUME;
 	
@@ -40,6 +44,8 @@ Menu InGameMenuInit()
 Menu SettingsMenuInit()
 {
 	Menu self;
+	self.UpdateFunc = SettingsMenuUpdate;
+
 	self.escReturn == SM_BACK;
 	self.Background = { 60, 60, 60, 255 };
 

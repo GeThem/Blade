@@ -1,7 +1,9 @@
 #pragma once
 
-#include "SDL_default.h"
 #include <string.h>
+
+#include "utils.h"
+#include "SDL_default.h"
 
 typedef struct VanishText
 {
@@ -11,6 +13,7 @@ typedef struct VanishText
 	int finalSize, currentSize;
 	int alpha;
 	Image txtImg;
+	bool isMoving = RandInt(0, 1);
 
 	float ratio;
 } VanishText;

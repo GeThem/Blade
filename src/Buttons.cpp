@@ -1,6 +1,6 @@
 #include "Buttons.h"
 
-TextButton TextButtonInit(const SDL_Rect& rect, const char* text, TTF_Font* font, const SDL_Color* butStates)
+TextButton TextButtonInit(const SDL_Rect& rect, const char* text, TTF_Font* font, const SDL_Color(&butStates)[3])
 {
 	TextButton self{ rect };
 	RenderText(self.textImg, font, text, { 200, 200, 200, 255 });
@@ -39,7 +39,7 @@ void TextButtonDraw(const TextButton& self)
 	SDL_RenderCopy(ren, self.textImg.texture, NULL, &drawRect);
 }
 
-SwitchButton SwitchButtonInit(const SDL_Rect& rect, const char* text, TTF_Font* font, const SDL_Color* butStates)
+SwitchButton SwitchButtonInit(const SDL_Rect& rect, const char* text, TTF_Font* font, const SDL_Color(&butStates)[4])
 {
 	SwitchButton self{ rect };
 	RenderText(self.textImg, font, text, { 200, 200, 200, 255 });

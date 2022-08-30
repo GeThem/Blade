@@ -1,18 +1,28 @@
 sprite offset=226 172
 hitbox=50 140
-parry=2 4
-evade=0.2 0.5
+parry=2.5 4
+evade=0.25 4
 weight=1.5
 ms=10
-hp=500
+hp=5200
+stamina=150
 projectile spd=30
-animations=5
-1 0.5 0.3 0.3 0.5
+animations=6
+1 0.5 0.3 0.3 0.5 0.5
 atks=3
-22 1 20 0 152 140 0.31 0.066 0.267 0 0.28
-20 0 200 32 345 172 0.177 0.066 0.247 0 0.56
-27 1 40 120 210 260 0.305 0.122 0.216 0.7 0.7 
+122 1 20 0 152 140 0.31 0.066 0.267 0 0.5 20
+120 0 200 32 345 172 0.187 0.066 0.237 0 0.6 22
+124 1 40 120 210 260 0.305 0.122 0.216 0.7 0.7 25
+charge atk=
+122 1 40 120 210 260 0.305 0.122 0.216 1 0.7 35 0.3
+plunge atk=
+122 2 40 120 210 260 0.122 0.216 0 0.7 35 _ 0.5
 
+//atks=n_of_attacks
+dmg dir hitbox_offset_x hitbox_offset_y hitbox_x hitbox_y delay atk_dur post_atk_dur cd stunDur stamina_cost
 
-atk=n_of_attacks
-dmg hitbox_offset_x hitbox_offset_y hitbox_x hitbox_y delay atk_dur post_atk_dur cd animation
+//charge atk
+min_dmg dir hitbox_offset_x hitbox_offset_y hitbox_x hitbox_y delay atk_dur post_atk_dur cd stunDur stamina_cost chrgAnimDur
+
+//plunge atk
+min_dmg dir hitbox_offset_x hitbox_offset_y hitbox_x hitbox_y atk_dur post_atk_dur cd stunDur stamina_cost prePlungeAnimFrameCount plungeAnimDur

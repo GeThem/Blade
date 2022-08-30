@@ -17,7 +17,7 @@ typedef struct TextButton
 	SDL_Color butStates[3], * currState;
 } TextButton;
 
-TextButton TextButtonInit(const SDL_Rect&, const char* text, TTF_Font*, const SDL_Color* butStates);
+TextButton TextButtonInit(const SDL_Rect&, const char* text, TTF_Font*, const SDL_Color(&butStates)[3]);
 bool TextButtonUpdate(TextButton&);
 void TextButtonDraw(const TextButton&);
 
@@ -29,6 +29,6 @@ typedef struct SwitchButton
 	bool isActivated = false;
 } SwitchButton;
 
-SwitchButton SwitchButtonInit(const SDL_Rect&, const char* text, TTF_Font*, const SDL_Color* butStates);
+SwitchButton SwitchButtonInit(const SDL_Rect&, const char* text, TTF_Font*, const SDL_Color (&butStates)[4]);
 bool SwitchButtonUpdate(SwitchButton&);
 void SwitchButtonDraw(const SwitchButton&);

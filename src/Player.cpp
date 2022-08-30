@@ -1,10 +1,10 @@
 #include "Player.h"
 
-void PlayerLoadCharacter(Player& self, const char* filename)
+void PlayerLoadCharacter(Player& self, const char* name)
 {
 	const Uint8 tempSize = 100;
 	char temp[tempSize] = "data/characters/";
-	strcat_s(temp, filename);
+	strcat_s(temp, name);
 	strcat_s(temp, ".txt");
 
 	FILE* file;
@@ -35,7 +35,9 @@ void PlayerLoadCharacter(Player& self, const char* filename)
 		else if (!strcmp(temp, "weight"))
 			self.ent.vVel = atof(val);
 		else if (!strcmp(temp, "hp"))
-			self.maxHP = atof(val);
+			self.maxHP = atoi(val);
+		else if (!strcmp(temp, "stamina"))
+			self.maxStamina = atoi(val);
 		else if (!strcmp(temp, "projectile spd"))
 			self.projBaseSpd = atof(val);
 		else if (!strcmp(temp, "parry"))
@@ -77,20 +79,45 @@ void PlayerLoadCharacter(Player& self, const char* filename)
 				self.atks[i].postAtkDur = atof(StrSplitInTwo(val, ' ')) * 1000.0f;
 				self.atks[i].CD = atof(StrSplitInTwo(val, ' ')) * 1000.0f;
 				self.atks[i].stunDur = atof(StrSplitInTwo(val, ' ')) * 1000.0f;
+				self.atks[i].staminaCost = atoi(StrSplitInTwo(val, ' '));
 				self.atks[i].dur += self.atks[i].delay + self.atks[i].postAtkDur;
-				self.atks[i].sprite.dur = self.atks[i].dur ;
+				self.atks[i].sprite.dur = self.atks[i].dur;
 			}
 			PlayerResetAttacks(self, self.numberOfAttacks);
 		}
+		else if (!strcmp(temp, "plunge atk") || !strcmp(temp, "charge atk"))
+		{
+			int i = strstr(temp, "plunge") ? 1 : 0;
+			fgets(temp, tempSize, file);
+			val = temp;
+			self.chargeAtk[i].atk.dmg = atof(StrSplitInTwo(val, ' '));
+			self.chargeAtk[i].atk.dir = atof(StrSplitInTwo(val, ' '));
+			self.chargeAtk[i].atk.hitboxOffset.x = atoi(StrSplitInTwo(val, ' '));
+			self.chargeAtk[i].atk.hitboxOffset.y = atoi(StrSplitInTwo(val, ' '));
+			self.chargeAtk[i].atk.hitbox.w = atoi(StrSplitInTwo(val, ' '));
+			self.chargeAtk[i].atk.hitbox.h = atoi(StrSplitInTwo(val, ' '));
+			if (i == 0)
+				self.chargeAtk[i].atk.delay = atof(StrSplitInTwo(val, ' ')) * 1000.0f;
+			else
+				self.chargeAtk[i].atk.delay = 0;
+			self.chargeAtk[i].atk.dur = atof(StrSplitInTwo(val, ' ')) * 1000.0f;
+			self.chargeAtk[i].atk.postAtkDur = atof(StrSplitInTwo(val, ' ')) * 1000.0f;
+			self.chargeAtk[i].atk.CD = atof(StrSplitInTwo(val, ' ')) * 1000.0f;
+			self.chargeAtk[i].atk.stunDur = atof(StrSplitInTwo(val, ' ')) * 1000.0f;
+			self.chargeAtk[i].atk.staminaCost = atoi(StrSplitInTwo(val, ' '));
+			if (i == 1)
+				self.chargeAtk[i].prePlungeFrameCount = atoi(StrSplitInTwo(val, ' '));
+			else
+				self.chargeAtk[i].prePlungeFrameCount = 0;
+			self.chargeAtk[i].chrgSprite.dur = atof(StrSplitInTwo(val, ' ')) * 1000.0f;
+			self.chargeAtk[i].atk.dur += self.chargeAtk[i].atk.delay + self.chargeAtk[i].atk.postAtkDur;
+			self.chargeAtk[i].atk.sprite.dur = self.chargeAtk[i].atk.dur;
+			PlayerResetChargeAttack(self, 0);
+			PlayerResetChargeAttack(self, 1);
+		}
 	}
-
-	self.chargeAtk.CD = 0.5 * 1000;
-	self.chargeAtk.dur = 0.3 * 1000;
-	self.chargeAtk.delay = 0.1 * 1000;
-	self.chargeAtk.dmg = 20;
-
 	fclose(file);
-	PlayerLoadCharacterSprites(self, filename);
+	PlayerLoadCharacterSprites(self, name);
 }
 
 void AnimationLoad(AnimatedSprite& anim, const char* path)
@@ -100,6 +127,7 @@ void AnimationLoad(AnimatedSprite& anim, const char* path)
 	anim.frameCount = anim.image.rect.w / anim.frameWdt;
 	anim.frameTime = ceilf(float(anim.dur) / anim.frameCount);
 	anim.currFrame = { 0, 0, anim.frameWdt, anim.frameWdt };
+	anim.timeElapsed = 0;
 }
 
 void PlayerLoadCharacterSprites(Player& self, const char* name)
@@ -115,14 +143,24 @@ void PlayerLoadCharacterSprites(Player& self, const char* name)
 		AnimationLoad(self.atks[i].sprite, path);
 		StrReplace(path, buffer, "");
 	}
-	char files[][14] = { "Idle.png", "Run.png", "Jump.png", "Fall.png", "Take hit.png"};
-	int currAnim = IDLE;
-	for (const char* file : files)
+	for (int i = 0; i < 2; i++)
 	{
-		strcat_s(path, file);
-		AnimationLoad(self.anims[currAnim], path);
-		StrReplace(path, file, "");
-		currAnim++;
+		char buffer[14];
+		strcpy_s(buffer, i == 0 ? "Charge.png" : "Plunge.png");
+		strcat_s(path, buffer);
+		AnimationLoad(self.chargeAtk[i].chrgSprite, path);
+		StrReplace(path, buffer, "");
+		strcpy_s(buffer, i == 0 ? "ChargeAtk.png" : "PlungeAtk.png");
+		strcat_s(path, buffer);
+		AnimationLoad(self.chargeAtk[i].atk.sprite, path);
+		StrReplace(path, buffer, "");
+	}
+	char files[][14] = { "Idle.png", "Run.png", "Jump.png", "Fall.png", "Take hit.png", "Death.png" };
+	for (int i = IDLE; i < 6; i++)
+	{
+		strcat_s(path, files[i]);
+		AnimationLoad(self.anims[i], path);
+		StrReplace(path, files[i], "");
 	}
 	self.currSprite = self.anims + IDLE;
 }
@@ -130,10 +168,19 @@ void PlayerLoadCharacterSprites(Player& self, const char* name)
 void PlayerReboot(Player& self)
 {
 	self.currHP = self.maxHP;
+	self.currStamina = self.maxStamina;
+	self.currStaminaCD = 0;
 	self.currEvadeDur = self.evadeDur;
 	self.currEvadeCD = self.evadeCD;
-	PlayerResetChargeAttack(self);
+	for (int i = IDLE; i < 6; i++)
+	{
+		self.anims[i].timeElapsed = 0;
+	}
+	PlayerResetChargeAttack(self, 0);
+	PlayerResetChargeAttack(self, 1);
 	PlayerResetAttacks(self, self.numberOfAttacks);
+	self.currAtk = self.atks;
+	self.currAtkIndex = 0;
 	strcpy_s(self.status, "right");
 	self.currParrCD = self.parryCD;
 	self.currParrDur = self.parryDur;
@@ -159,31 +206,34 @@ void PlayerNextAttack(Player& self)
 {
 	if (strstr(self.status, "_postattack"))
 	{
-		self.currAtk = (self.currAtk + 1) % self.numberOfAttacks;
+		self.currAtkIndex = (self.currAtkIndex + 1) % self.numberOfAttacks;
+		self.currAtk = &self.atks[self.currAtkIndex];
 		return;
 	}
-	self.currAtk = 0;
+	PlayerResetAttacks(self, self.currAtkIndex + 1);
+	self.currAtkIndex = 0;
+	self.currAtk = self.atks;
 }
 
 void PlayerInput(Player& self)
 {
-	self.ent.dir < 0 ? StrReplace(self.status, "right", "left") : StrReplace(self.status, "left", "right");
-
+	self.ent.dir > 0 ? StrReplace(self.status, "left", "right") : StrReplace(self.status, "right", "left");
 	if (self.isDisabled)
 		return;
 
 	if (self.isBusy)
 	{
 		if (strstr(self.status, "_attack") && !self.isDealingDmg &&
-			(OnKeyPress(self.ctrls.right) || OnKeyPress(self.ctrls.left)))
+			(OnKeyPress(self.ctrls.right) || OnKeyPress(self.ctrls.left) || OnKeyPress(self.ctrls.jump)))
 		{
 			StrReplace(self.status, "_attack", "");
-			PlayerResetAttacks(self, self.currAtk + 1);
+			PlayerResetAttacks(self, self.currAtkIndex + 1);
 			self.isBusy = false;
+			self.canMove = true;
 		}
 		else
 		{
-			if (strstr(self.status, "chrgattack"))
+			if (strstr(self.status, "chrg"))
 			{
 				self.isHoldingAtk = KeyHold(self.ctrls.chargeAtk);
 			}
@@ -194,38 +244,45 @@ void PlayerInput(Player& self)
 			return;
 		}
 	}
-
 	if (OnKeyPress(self.ctrls.jump) && !self.ent.isInAir)
 	{
 		self.ent.verMS = -self.ent.vVel * 17;
 		self.ent.isInAir = true;
-		StrReplace(self.status, "_run", "");
-		strcat_s(self.status, "_jump");
+		strcpy_s(self.status, self.ent.dir > 0 ? "right_jump" : "left_jump");
 	}
-	if (kb.state[self.ctrls.chargeAtk] && self.chargeAtk.currCD == self.chargeAtk.CD)
+	if (OnKeyPress(self.ctrls.chargeAtk) && !strstr(self.status, "_attack") && self.canCharge 
+		&& self.currStamina > 0)
 	{
-		self.isBusy = self.isHoldingAtk = true;
-		self.ent.isMoving = false;
-		strcat_s(self.status, "_chrgattack");
-		return;
+		if (!self.ent.isInAir)
+		{
+			PlayerResetAttacks(self, self.currAtkIndex + 1);
+			PlayerResetChargeAttack(self, 0);
+			self.currAtk = &self.chargeAtk->atk;
+			self.ent.currMS = 0;
+			self.isBusy = self.isHoldingAtk = true;
+			self.ent.isMoving = self.canCharge = self.canMove = false;
+			strcpy_s(self.status, self.ent.dir > 0 ? "right_chrg" : "left_chrg");
+			return;
+		}
 	}
-	if (OnKeyPress(self.ctrls.attack) && self.canAttack)
+	if (OnKeyPress(self.ctrls.attack) && !strstr(self.status, "chrg") && self.canAttack
+		&& self.currStamina > 0)
 	{
 		if (!self.ent.isInAir)
 			self.ent.currMS = 0;
-		self.atks[self.currAtk].sprite.timeElapsed = 0;
+		self.currAtk->sprite.timeElapsed = 0;
 		PlayerNextAttack(self);
+		PlayerDecreaseStamina(self, self.currAtk->staminaCost);
 		self.isBusy = true;
 		self.canAttack = self.ent.isMoving = self.canMove = false;
 		strcpy_s(self.status, self.ent.dir > 0 ? "right_attack" : "left_attack");
 		return;
 	}
-	if (OnKeyPress(self.ctrls.parry) && self.canParry)
+	if (kb.state[self.ctrls.parry] && self.canParry && self.currStamina > 0)
 	{
 		self.isBusy = self.isHoldingParry = true;
 		self.canParry = self.canMove = self.ent.isMoving = false;
-		StrReplace(self.status, "_run", "");
-		strcat_s(self.status, "_parry");
+		strcpy_s(self.status, self.ent.dir > 0 ? "right_parry" : "left_parry");
 		return;
 	}
 	if (OnKeyPress(self.ctrls.evade) && self.canEvade)
@@ -248,11 +305,11 @@ void PlayerInput(Player& self)
 					PlayerAttackPenalty(self, 0.14);
 				}
 				self.ent.dir = -kb.state[self.ctrls.left] + kb.state[self.ctrls.right];
-				if (!self.ent.isInAir && !strstr(self.status, "run"))
-					strcat_s(self.status, "_run");
+				if (!strstr(self.status, "jump") && !strstr(self.status, "fall"))
+					strcpy_s(self.status, self.ent.dir > 0 ? "right_run" : "left_run");
 			}
 			else
-				StrReplace(self.status, "_run", "");
+				StrReplace(self.status, "_run", "_idle");
 	}
 	
 	self.pressedCtrls.thrw = OnKeyPress(self.ctrls.thrw);
@@ -275,8 +332,8 @@ void PlayerPlatformVerCollision(Player& self, Platform& platform)
 		return;
 	self.ent.isInAir = false;
 	self.ent.verMS = 0;
-	StrReplace(self.status, "_jump", "");
-	StrReplace(self.status, "_fall", "");
+	StrReplace(self.status, "jump", "idle");
+	StrReplace(self.status, "fall", "idle");
 	EntityMoveTo(self.ent, { self.ent.pos.x, (float)platform.rect.y - self.ent.rect.h });
 	return;
 }
@@ -304,7 +361,7 @@ void PlayerPlatformHorCollision(Player& self, Platform& platform)
 		moveTo.x += platform.rect.w;
 	}
 	if (strstr(self.status, "_run"))
-		StrReplace(self.status, "_run", "");
+		StrReplace(self.status, "run", "idle");
 	self.ent.currMS = 0;
 	self.ent.isMoving = false;
 	EntityMoveTo(self.ent, moveTo);
@@ -319,23 +376,22 @@ void PlayerResetAttacks(Player& self, int number)
 		self.atks[i].currDur = self.atks[i].dur;
 		self.atks[i].sprite.timeElapsed = 0;
 	}
-	self.canAttack = true;
-	self.canDealDmg = true;
+	self.canAttack = self.canDealDmg = true;
 	self.isDealingDmg = false;
 }
 
-void PlayerResetChargeAttack(Player& self)
+void PlayerResetChargeAttack(Player& self, int type)
 {
-	self.chargeAtk.currCD = self.chargeAtk.CD;
-	self.chargeAtk.currDur = self.chargeAtk.dur;
-	self.chargeAtk.chargeTime = 0;
-	self.canDealDmg = true;
+	self.chargeAtk[type].atk.currCD = self.chargeAtk[type].atk.CD;
+	self.chargeAtk[type].atk.currDur = self.chargeAtk[type].atk.dur;
+	self.chargeAtk[type].atk.sprite.timeElapsed = self.chargeAtk[type].chargeTime = 0;
+	self.chargeAtk[type].chrgSprite.timeElapsed = 0;
+	self.canCharge = self.canDealDmg = true;
 	self.isDealingDmg = false;
 }
 
-void PlayerProcessAttack(Player& self, Attack& atk, Uint16 dt)
+bool PlayerProcessAttack(Player& self, Attack& atk, Uint16 dt)
 {
-	StrReplace(self.status, "_postattack", "");
 	atk.currDur -= dt;
 	if (atk.currDur >= atk.postAtkDur)
 	{
@@ -345,42 +401,45 @@ void PlayerProcessAttack(Player& self, Attack& atk, Uint16 dt)
 			atk.hitbox.x = self.ent.rect.x + (self.ent.dir == 1 ? self.ent.rect.w - atk.hitboxOffset.x : -atk.hitbox.w + atk.hitboxOffset.x);
 			atk.hitbox.y = self.ent.pos.y - atk.hitboxOffset.y;
 		}
-		return;
+		return false;
 	}
 	self.canDealDmg = true;
 	self.isBusy = self.isDealingDmg = false;
-	StrReplace(self.status, "_attack", "_postattack");
+	return true;
 }
 
-void PlayerProcessChargeAttack(Player& self, Uint16 dt)
+bool PlayerProcessChargeAttack(Player& self, Uint16 dt)
 {
-	chrgAtk& atk = self.chargeAtk;
-	if (self.isHoldingAtk && atk.currDur == atk.dur)
+	if (self.isHoldingAtk && !strstr(self.status, "chrgAtk") || self.chargeAtk[0].chargeTime < MIN_CHARGE_TIME)
 	{
-		atk.chargeTime += dt;
-		return;
+		self.chargeAtk[0].chargeTime += dt;
+		return false;
 	}
-	atk.currDur -= dt;
-	if (atk.currDur > 0)
+	if (!strstr(self.status, "chrgAtk") && !strstr(self.status, "chrgPostAtk"))
+		StrReplace(self.status, "_chrg", "_chrgAtk");
+	if (!strstr(self.status, "chrgPostAtk"))
 	{
-		if (atk.dur - atk.currDur > atk.delay)
+		if (PlayerProcessAttack(self, self.chargeAtk[0].atk, dt))
 		{
-			self.isDealingDmg = true;
-			self.attackBox.x = self.ent.rect.x + (self.ent.dir == 1 ? self.ent.rect.w : -self.attackBox.w);
-			self.attackBox.y = self.ent.pos.y;
+			PlayerDecreaseStamina(self, self.currAtk->staminaCost);
+			StrReplace(self.status, "chrgAtk", "chrgPostAtk");
+			self.isBusy = true;
 		}
-		if (!self.ent.isInAir && atk.currDur == atk.dur)
-			self.ent.currMS = 0;
-		return;
+		return false;
 	}
-	self.canDealDmg = true;
-	self.isBusy = self.isDealingDmg = false;
-	StrReplace(self.status, "_chrgattack", "");
+	self.currAtk->currDur -= dt;
+	if (self.currAtk->currDur <= 0)
+	{
+		self.canMove = true;
+		self.isBusy = false;
+		return true;
+	}
+	return false;
 }
 
 void PlayerProcessParry(Player& self, Uint16 dt)
 {
-	if (self.isHoldingParry)
+	if (self.isHoldingParry || self.parryDur - self.currParrDur <= MIN_PARRY_DUR)
 	{
 		self.currParrDur -= dt;
 		if (self.currParrDur > 0)
@@ -389,8 +448,8 @@ void PlayerProcessParry(Player& self, Uint16 dt)
 	self.isBusy = false;
 	self.canMove = true;
 	self.currParrDur = self.parryDur;
-	self.currParrDur = self.parryDur;
-	StrReplace(self.status, "_parry", "");
+	PlayerDecreaseStamina(self, 0);
+	StrReplace(self.status, "parry", "idle");
 }
 
 void PlayerProcessEvade(Player& self, Uint16 dt)
@@ -398,8 +457,8 @@ void PlayerProcessEvade(Player& self, Uint16 dt)
 	self.currEvadeDur -= dt;
 	if (self.currEvadeDur > 0)
 		return;
-	self.isBusy = false;
 	self.currEvadeDur = self.evadeDur;
+	self.isBusy = false;
 	StrReplace(self.status, "_evade", "");
 }
 
@@ -441,59 +500,30 @@ void PlayerProcessProjectiles(Player& self, Uint16 dt)
 void PlayerAttackPenalty(Player& self, float duration)
 {
 	duration *= 1000.0f;
-	duration = max(self.atks[self.currAtk].currCD, duration);
-	PlayerResetAttacks(self, self.currAtk + 1);
+	duration = max(self.currAtk->currCD, duration);
+	PlayerResetAttacks(self, self.currAtkIndex + 1);
 	self.canAttack = self.isBusy = self.isDealingDmg = false;
 	self.atks[0].currCD = duration;
-	self.currAtk = 0;
+	self.currAtkIndex = 0;
+	self.currAtk = self.atks;
 	StrReplace(self.status, "_attack", "");
 }
 
-void PlayerAttackCooldown(Player& self, Attack& atk, Uint16 dt)
+bool PlayerAttackCooldown(Player& self, Attack& atk, Uint16 dt)
 {
-	if (strstr(self.status, "_attack"))
-		return;
-	if (strstr(self.status, "postattack"))
-	{
-		atk.currDur -= dt;
-		if (atk.currDur <= 0)
-		{
-			StrReplace(self.status, "_postattack", "");
-			self.canMove = true;
-		}
-	}
 	atk.currCD -= dt;
 	if (atk.currCD > 0)
 	{
-		return;
+		return false;
 	}
-	atk.currCD = atk.CD;
-	if (atk.currDur <= 0)
-	{
-		PlayerResetAttacks(self, self.numberOfAttacks);
-	}
-	self.canAttack = true;
-}
-
-void PlayerChrgAttackCooldown(Player& self, Uint16 dt)
-{
-	chrgAtk& atk = self.chargeAtk;
-	if (atk.currDur > 0)
-		return;
-	atk.currCD -= dt;
-	if (atk.currCD > 0)
-		return;
-	atk.currCD = atk.CD;
-	atk.currDur = atk.dur;
-	atk.chargeTime = 0;
-	return;
+	atk.currCD = 0;
+	return true;
 }
 
 void PlayerCancelParry(Player& self)
 {
-	StrReplace(self.status, "_parry", "");
-	std::cout << self.status << '\n';
-	self.canMove = false;
+	StrReplace(self.status, "parry", "idle");
+	self.canMove = true;
 	self.currParrDur = 0;
 	self.isBusy = false;
 }
@@ -506,13 +536,12 @@ void PlayerParryCooldown(Player& self, Uint16 dt)
 	if (self.currParrCD > 0)
 		return;
 	self.currParrCD = self.parryCD;
-	self.currParrDur = self.parryDur;
 	self.canParry = true;
 }
 
 void PlayerEvadeCooldown(Player& self, Uint16 dt)
 {
-	if (self.currEvadeDur > 0)
+	if (strstr(self.status, "evade"))
 		return;
 	self.currEvadeCD -= dt;
 	if (self.currEvadeCD > 0)
@@ -524,7 +553,7 @@ void PlayerEvadeCooldown(Player& self, Uint16 dt)
 void PlayerDisable(Player& self, float dur)
 {
 	dur *= 1000;
-	PlayerResetAttacks(self, self.currAtk + 1);
+	PlayerResetAttacks(self, self.currAtkIndex + 1);
 	self.anims[HIT].timeElapsed = 0;
 	strcpy_s(self.status, self.ent.dir > 0 ? "right_hit" : "left_hit");
 	self.isDisabled = true;
@@ -539,31 +568,82 @@ void PlayerDisableElapse(Player& self, Uint16 dt)
 	{
 		self.disableDur = 0;
 		self.isDisabled = false;
-		StrReplace(self.status, "_hit", "");
+		StrReplace(self.status, "_hit", "_idle");
 		self.canMove = true;
+	}
+}
+
+void PlayerDecreaseStamina(Player& self, float amount)
+{
+	self.currStamina -= amount;
+	if (self.currStamina < 0)
+	{
+		self.currStaminaCD = STAMINA_RECHARGE_CD * 2;
+		self.currStamina = 0;
+	}
+	else
+		self.currStaminaCD = STAMINA_RECHARGE_CD;
+}
+
+void PlayerStaminaRecharge(Player& self, Uint16 dt)
+{
+	self.currStaminaCD -= dt;
+	if (self.currStaminaCD <= 0)
+	{
+		self.currStaminaCD = 0;
+		self.currStamina = min(self.maxStamina, self.currStamina + STAMINA_RECHARGE_RATE);
 	}
 }
 
 void PlayerUpdate(Player& self, Uint16 dt)
 {
-	if (self.isDisabled)
+	if (self.currHP <= 0)
 	{
-		PlayerDisableElapse(self, dt);
+		self.ent.isMoving = false;
+		strcpy_s(self.status, self.ent.dir > 0 ? "right_dead" : "left_dead");
+		return;
 	}
+	if (!self.isBusy)
+		PlayerStaminaRecharge(self, dt);
+	if (self.isDisabled)
+		PlayerDisableElapse(self, dt);
 	else if (self.isBusy)
 	{
 		if (strstr(self.status, "_attack"))
-			PlayerProcessAttack(self, self.atks[self.currAtk], dt);
-		else if (strstr(self.status, "chrgattack"))
-			PlayerProcessChargeAttack(self, dt);
+		{
+			if (PlayerProcessAttack(self, *self.currAtk, dt))
+				StrReplace(self.status, "_attack", "_postattack");
+		}
+		else if (strstr(self.status, "chrg"))
+		{
+			if (PlayerProcessChargeAttack(self, dt))
+			{
+				StrReplace(self.status, "chrgPostAtk", "idle");
+			}
+		}
 		else if (strstr(self.status, "parry"))
 			PlayerProcessParry(self, dt);
 		else if (strstr(self.status, "evade"))
 			PlayerProcessEvade(self, dt);
 	}
 	PlayerProcessProjectiles(self, dt);
-	PlayerAttackCooldown(self, self.atks[self.currAtk], dt);
-	PlayerChrgAttackCooldown(self, dt);
+	if (!strstr(self.status, "_attack"))
+	{
+		if (strstr(self.status, "postattack"))
+		{
+			self.currAtk->currDur -= dt;
+			if (self.currAtk->currDur <= 0)
+			{
+				StrReplace(self.status, "postattack", "idle");
+				self.canMove = true;
+			}
+		}
+		self.canAttack = PlayerAttackCooldown(self, self.atks[self.currAtkIndex], dt);
+	}
+	if (!strstr(self.status, "_chrg"))
+	{
+		self.canCharge = PlayerAttackCooldown(self, self.chargeAtk[0].atk, dt);
+	}
 	PlayerParryCooldown(self, dt);
 	PlayerEvadeCooldown(self, dt);
 	if (!self.isBusy && self.ent.isInAir && !strstr(self.status, "fall"))
@@ -571,13 +651,13 @@ void PlayerUpdate(Player& self, Uint16 dt)
 		if (self.ent.verMS > 0 && !strstr(self.status, "jump"))
 		{
 			StrReplace(self.status, "_run", "");
+			StrReplace(self.status, "_idle", "");
 			strcat_s(self.status, "_jump");
 		}
-		
 		if (self.ent.verMS > 20)
 		{
-			StrReplace(self.status, "_jump", "");
-			strcat_s(self.status, "_fall");
+			StrReplace(self.status, "jump", "");
+			strcat_s(self.status, "fall");
 			return;
 		}
 	}
@@ -591,50 +671,66 @@ VanishText PlayerSpawnText(Player& self, const char* text, TTF_Font* font, int s
 	return txt;
 }
 
-int PlayerTakeHit(Player& self, Attack& atk, int dir)
+VanishText PlayerAttack(Player& self, Player& target, TTF_Font* font)
 {
-	PlayerResetAttacks(self, self.currAtk + 1);
+	self.canDealDmg = false;
+	bool isCrit = RandInt(1, 100) <= self.critRate;
+	int dmg = self.currAtk->dmg + self.currAtk->dmg * isCrit;
+	Sint8 dir;
+	if (self.currAtk->dir == BOTH)
+		dir = RectGetHorMid(self.currAtk->hitbox) < EntityGetHorMid(target.ent) ? 1 : -1;
+	else
+		dir = self.currAtk->dir * self.ent.dir;
+	float chrgTime = strstr(self.status, "_attack") ? 1 : 1 + (self.chargeAtk[0].chargeTime - MIN_CHARGE_TIME) / 1000.0f;
+	dmg *= min(2, chrgTime);
+	int takenDmg = PlayerTakeHit(target, dmg, self.currAtk->stunDur, dir, self.currAtk->dmg * 0.054);
+	char buffer[10];
+	sprintf_s(buffer, "%i", dmg);
+	return PlayerSpawnText(target, buffer, font, RandInt(37, 44) + 15 * isCrit, { 230, 230, 230 });
+}
+
+int PlayerTakeHit(Player& self, int dmg, int stunDur, int dir, int pushPower)
+{
+	PlayerResetAttacks(self, self.currAtkIndex + 1);
 	strcpy_s(self.status, self.ent.dir > 0 ? "right_hit" : "left_hit");
 	self.ent.dir = -dir;
-	self.ent.currMS = dir * atk.dmg * 0.3;
+	self.ent.currMS = dir * pushPower;
 	self.anims[HIT].timeElapsed = 0;
 	self.isDisabled = true;
-	self.disableDur = max(atk.stunDur, self.disableDur);
+	self.disableDur = max(stunDur, self.disableDur);
 	self.ent.isMoving = self.isBusy = false;
-	int takenDmg = atk.dmg;
+	int takenDmg = dmg;
 	self.currHP -= takenDmg;
 	return takenDmg;
 }
 
 void PlayerDraw(const Player& self)
 {
-	if (strstr(self.status, "parry"))
-		SDL_SetRenderDrawColor(ren, 200, 200, 0, 255);
-	else
-		SDL_SetRenderDrawColor(ren, self.color.r, self.color.g, self.color.b, 255);
-	SDL_Rect drawRect;
-	if (!strstr(self.status, "evade"))
-	{
-		//CHANGE IT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-		drawRect = RectTransformForCurrWin(
-			{
-				self.ent.rect.x - self.spriteOffset.x, self.ent.rect.y - self.spriteOffset.y,
-				self.currSprite->frameWdt, self.currSprite->frameWdt
-			}
-		);
-		//SDL_Rect hb = RectTransformForCurrWin(self.ent.rect);
-		//SDL_RenderFillRect(ren, &hb);
-		SDL_RenderCopyEx(ren, self.currSprite->image.texture, &self.currSprite->currFrame, &drawRect,
-			0, NULL, self.currSprite->flip);
-	}
+	SDL_Rect drawRect = RectTransformForCurrWin(
+		{
+			self.ent.rect.x - self.spriteOffset.x, self.ent.rect.y - self.spriteOffset.y,
+			self.currSprite->frameWdt, self.currSprite->frameWdt
+		}
+	);
+	//SDL_Rect hb = RectTransformForCurrWin(self.ent.rect);
+	//SDL_RenderFillRect(ren, &hb);
+	SDL_SetTextureAlphaMod(self.currSprite->image.texture, strstr(self.status, "evade") ? 100 : 255);
+	SDL_RenderCopyEx(ren, self.currSprite->image.texture, &self.currSprite->currFrame, &drawRect,
+		0, NULL, self.currSprite->flip);
 	//if (self.isDealingDmg)
 	//{
 	//	SDL_SetRenderDrawColor(ren, 0, 150, 0, 255);
-	//	drawRect = RectTransformForCurrWin(self.atks[self.currAtk].hitbox);
+	//	drawRect = RectTransformForCurrWin(self.atks[self.currAtkIndex].hitbox);
 	//	SDL_RenderFillRect(ren, &drawRect);
 	//}
 	SDL_SetRenderDrawColor(ren, 200, 50, 50, 255);
-	drawRect = RectTransformForCurrWin(self.hpRect);
+	drawRect = RectTransformForCurrWin(self.hpBar);
+	SDL_RenderFillRect(ren, &drawRect);
+	SDL_SetRenderDrawColor(ren, 235, 223, 2, 255);
+	drawRect = RectTransformForCurrWin(self.staminaBar);
+	SDL_RenderFillRect(ren, &drawRect);
+	SDL_SetRenderDrawColor(ren, self.color.r, self.color.g, self.color.b, 255);
+	drawRect = RectTransformForCurrWin({ RectGetHorMid(self.ent.rect) - 7, self.ent.rect.y - 30, 14, 14 });
 	SDL_RenderFillRect(ren, &drawRect);
 }
 
@@ -644,15 +740,11 @@ void PlayerAnimate(Player& self, Uint16 dt)
 	if (true)
 	{
 		AnimatedSprite* anim = self.anims + FALL;
-		if (strstr(self.status, "_attack"))
+		if (strstr(self.status, "attack") || strstr(self.status, "Atk"))
 		{
-			anim = &self.atks[self.currAtk].sprite;
+			anim = &self.currAtk->sprite;
 		}
-		else if (strstr(self.status, "postattack"))
-		{
-			anim = &self.atks[self.currAtk].sprite;
-		}
-		else if (!strchr(self.status, '_'))
+		else if (strstr(self.status, "_idle"))
 		{
 			anim = self.anims + IDLE;
 		}
@@ -667,7 +759,19 @@ void PlayerAnimate(Player& self, Uint16 dt)
 			anim = self.anims + JUMP;
 		else if (strstr(self.status, "hit"))
 			anim = self.anims + HIT;
-
+		else if (strstr(self.status, "chrg"))
+		{
+			anim = &self.chargeAtk[0].chrgSprite;
+			anim->timeElapsed = max(self.chargeAtk[0].prePlungeFrameCount * anim->frameTime, anim->timeElapsed);
+		}
+		else if (strstr(self.status, "dead"))
+		{
+			anim = self.anims + DEATH;
+			if (anim->timeElapsed + dt >= anim->dur)
+			{
+				anim->timeElapsed = anim->dur - dt - 1;
+			}
+		}
 		anim->flip = flip;
 		anim->timeElapsed = (anim->timeElapsed + dt) % anim->dur;
 		anim->currFrame.x = (anim->timeElapsed / anim->frameTime) * anim->frameWdt;
@@ -685,6 +789,11 @@ void PlayerClear(Player& self)
 	for (int i = 0; i < self.numberOfAttacks; i++)
 	{
 		ImageDestroy(self.atks[i].sprite.image);
+	}
+	for (chrgAtk& atk : self.chargeAtk)
+	{
+		ImageDestroy(atk.chrgSprite.image);
+		ImageDestroy(atk.atk.sprite.image);
 	}
 	free(self.atks);
 }
