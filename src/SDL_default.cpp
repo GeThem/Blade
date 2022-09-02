@@ -154,35 +154,29 @@ SDL_Texture* LoadTexture(const char* filename, SDL_Rect* rect)
 	return texture;
 }
 
-void RenderText(Image& textImg, TTF_Font* font, const char* string, const SDL_Color& color)
+void RenderText(Image& textImg, TTF_Font* font, const char* string, const SDL_Color& color, TTF_Font* outline)
 {
 	if (textImg.texture != NULL)
 		SDL_DestroyTexture(textImg.texture);
 	
-	//TTF_SetFontOutline(font, 1);
-	//SDL_Surface* surface = TTF_RenderText_Blended(font, string, { 0,0,0,color.a });
-	//TTF_SetFontOutline(font, 0);
-	//textImg.texture = SDL_CreateTextureFromSurface(ren, surface);
-	//textImg.rect.w = surface->w;
-	//textImg.rect.h = surface->h;
-	//SDL_SetTextureBlendMode(textImg.texture, SDL_BLENDMODE_BLEND);
-	//SDL_FreeSurface(surface);
-	//surface = TTF_RenderText_Blended(font, string, color);
-	//SDL_Texture* texture = SDL_CreateTextureFromSurface(ren, surface);
-	//SDL_Rect rect{ textImg.rect.x + 1, textImg.rect.y + 1, surface->w, surface->h };
-	//SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
-	//SDL_SetRenderTarget(ren, textImg.texture);
-	//SDL_RenderCopy(ren, texture, NULL, &rect);
-	//SDL_DestroyTexture(texture);
-	//SDL_FreeSurface(surface);
-	//SDL_SetRenderTarget(ren, NULL);
+	SDL_Surface* bgSurface;
+	if (outline)
+	{
+		bgSurface = TTF_RenderText_Blended(outline, string, { 0, 0, 0, color.a });
+		SDL_Surface* fgSurface = TTF_RenderText_Blended(font, string, color);
+		SDL_Rect rect = { FONT_OUTLINE_SIZE, FONT_OUTLINE_SIZE, fgSurface->w, fgSurface->h };
 
-
-	SDL_Surface* surface = TTF_RenderText_Blended(font, string, color);
-	textImg.texture = SDL_CreateTextureFromSurface(ren, surface);
-	textImg.rect.w = surface->w;
-	textImg.rect.h = surface->h;
-	SDL_FreeSurface(surface);
+		SDL_BlitSurface(fgSurface, NULL, bgSurface, &rect);
+		SDL_FreeSurface(fgSurface);
+	}
+	else
+	{
+		bgSurface = TTF_RenderText_Blended(font, string, color);
+	}
+	textImg.texture = SDL_CreateTextureFromSurface(ren, bgSurface);
+	textImg.rect.w = bgSurface->w;
+	textImg.rect.h = bgSurface->h;
+	SDL_FreeSurface(bgSurface);
 
 	SDL_SetTextureBlendMode(textImg.texture, SDL_BLENDMODE_BLEND);
 }

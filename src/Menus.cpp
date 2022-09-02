@@ -93,8 +93,8 @@ Sint8 MenuUpdate(Menu& self)
 
 void MenuDraw(const Menu& self)
 {
-	const SDL_Color& BG = self.Background;
-	ScreenFill(BG.r, BG.g, BG.b, BG.a);
+	const SDL_Color& bg = self.Background;
+	ScreenFill(bg.r, bg.g, bg.b, bg.a);
 	for (Uint8 i = 0; i < self.switchButtonsCount; i++)
 		SwitchButtonDraw(self.switchButtons[i]);
 	for (Uint8 i = 0; i < self.textButtonsCount; i++)

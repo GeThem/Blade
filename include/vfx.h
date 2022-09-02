@@ -31,7 +31,7 @@ typedef struct VList
 
 VanishText VanishTextGenerate(
 	const char* text, TTF_Font* font, int size, const SDL_Color&,
-	float appearTime, float vanishTime, float existTime
+	float appearTime, float vanishTime, float existTime, TTF_Font* outline=NULL
 );
 
 void VanishTextUpdate(VanishText&, const Uint16& dt);

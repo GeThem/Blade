@@ -25,7 +25,7 @@ void PlayerLoadCharacter(Player& self, const char* name)
 		{
 			self.ent.rect.w = self.plungeRect.w = atoi(StrSplitInTwo(val, ' '));
 			self.ent.rect.h = atoi(val);
-			self.plungeRect.h = self.ent.rect.h * 1.5;
+			self.plungeRect.h = self.ent.rect.h * 1.2;
 		}
 		else if (!strcmp(temp, "ms"))
 		{
@@ -105,10 +105,7 @@ void PlayerLoadCharacter(Player& self, const char* name)
 			self.chargeAtk[i].atk.CD = atof(StrSplitInTwo(val, ' ')) * 1000.0f;
 			self.chargeAtk[i].atk.stunDur = atof(StrSplitInTwo(val, ' ')) * 1000.0f;
 			self.chargeAtk[i].atk.staminaCost = atoi(StrSplitInTwo(val, ' '));
-			if (i == 1)
-				self.chargeAtk[i].prePlungeFrameCount = atoi(StrSplitInTwo(val, ' '));
-			else
-				self.chargeAtk[i].prePlungeFrameCount = 0;
+			self.chargeAtk[i].preChrgTime = atof(StrSplitInTwo(val, ' ')) * 1000.0f;
 			self.chargeAtk[i].chrgSprite.dur = atof(StrSplitInTwo(val, ' ')) * 1000.0f;
 			self.chargeAtk[i].atk.dur += self.chargeAtk[i].atk.delay + self.chargeAtk[i].atk.postAtkDur;
 			self.chargeAtk[i].atk.sprite.dur = self.chargeAtk[i].atk.dur;
@@ -167,6 +164,7 @@ void PlayerLoadCharacterSprites(Player& self, const char* name)
 
 void PlayerReboot(Player& self)
 {
+	self.dOrder = FOREGROUND;
 	self.currHP = self.maxHP;
 	self.currStamina = self.maxStamina;
 	self.currStaminaCD = 0;
@@ -181,7 +179,7 @@ void PlayerReboot(Player& self)
 	PlayerResetAttacks(self, self.numberOfAttacks);
 	self.currAtk = self.atks;
 	self.currAtkIndex = 0;
-	strcpy_s(self.status, "right");
+	strcpy_s(self.status, "idle");
 	self.currParrCD = self.parryCD;
 	self.currParrDur = self.parryDur;
 	self.isBusy = false;
@@ -204,7 +202,7 @@ void PlayerReboot(Player& self)
 
 void PlayerNextAttack(Player& self)
 {
-	if (strstr(self.status, "_postattack"))
+	if (strstr(self.status, "postAttack"))
 	{
 		self.currAtkIndex = (self.currAtkIndex + 1) % self.numberOfAttacks;
 		self.currAtk = &self.atks[self.currAtkIndex];
@@ -217,55 +215,94 @@ void PlayerNextAttack(Player& self)
 
 void PlayerInput(Player& self)
 {
-	self.ent.dir > 0 ? StrReplace(self.status, "left", "right") : StrReplace(self.status, "right", "left");
 	if (self.isDisabled)
 		return;
 
+	if (!self.isBusy || strstr(self.status, "plunge") && !strstr(self.status, "Atk"))
+		self.isDismounting = kb.state[self.ctrls.dismount];
+
+	if (!self.isBusy || strstr(self.status, "evade"))
+	{
+		if (!self.canMove && !KeyHold(self.ctrls.left) && !KeyHold(self.ctrls.right))
+			self.canMove = true;
+		if (self.canMove)
+		{
+			self.ent.isMoving = kb.state[self.ctrls.left] + kb.state[self.ctrls.right] == 1;
+			if (self.ent.isMoving)
+			{
+				if (strstr(self.status, "postAttack"))
+				{
+					StrReplace(self.status, "postAttack", "");
+					PlayerAttackPenalty(self, 0.14);
+				}
+				self.ent.dir = -kb.state[self.ctrls.left] + kb.state[self.ctrls.right];
+				StrReplace(self.status, "idle", "");
+				if (!strstr(self.status, "jump") && !strstr(self.status, "fall") && !strstr(self.status, "run"))
+					strcat_s(self.status, "run");
+			}
+			else
+				StrReplace(self.status, "run", "idle");
+		}
+		if (OnKeyPress(self.ctrls.jump) && !self.ent.isInAir)
+		{
+			self.ent.verMS = -self.ent.vVel * 17;
+			self.ent.isInAir = true;
+			StrReplace(self.status, "run", "jump");
+			StrReplace(self.status, "idle", "jump");
+			StrReplace(self.status, "postAttack", "jump");
+
+		}
+	}
 	if (self.isBusy)
 	{
-		if (strstr(self.status, "_attack") && !self.isDealingDmg &&
+		if (strstr(self.status, "attack") && !self.isDealingDmg &&
 			(OnKeyPress(self.ctrls.right) || OnKeyPress(self.ctrls.left) || OnKeyPress(self.ctrls.jump)))
 		{
-			StrReplace(self.status, "_attack", "");
+			StrReplace(self.status, "attack", "idle");
 			PlayerResetAttacks(self, self.currAtkIndex + 1);
 			self.isBusy = false;
 			self.canMove = true;
+			return PlayerInput(self);
 		}
-		else
+		if (strstr(self.status, "chrg"))
 		{
-			if (strstr(self.status, "chrg"))
-			{
-				self.isHoldingAtk = KeyHold(self.ctrls.chargeAtk);
-			}
-			if (strstr(self.status, "parry"))
-			{
-				self.isHoldingParry = KeyHold(self.ctrls.parry);
-			}
-			return;
+			self.isHoldingAtk = KeyHold(self.ctrls.chargeAtk);
 		}
+		if (strstr(self.status, "parry"))
+		{
+			self.isHoldingParry = KeyHold(self.ctrls.parry);
+		}
+		return;
 	}
-	if (OnKeyPress(self.ctrls.jump) && !self.ent.isInAir)
+	if (OnKeyPress(self.ctrls.chargeAtk) && self.currStamina > 0)
 	{
-		self.ent.verMS = -self.ent.vVel * 17;
-		self.ent.isInAir = true;
-		strcpy_s(self.status, self.ent.dir > 0 ? "right_jump" : "left_jump");
-	}
-	if (OnKeyPress(self.ctrls.chargeAtk) && !strstr(self.status, "_attack") && self.canCharge 
-		&& self.currStamina > 0)
-	{
-		if (!self.ent.isInAir)
+		if (!self.ent.isInAir && self.canCharge)
 		{
 			PlayerResetAttacks(self, self.currAtkIndex + 1);
 			PlayerResetChargeAttack(self, 0);
-			self.currAtk = &self.chargeAtk->atk;
+			self.currAtk = &self.chargeAtk[0].atk;
 			self.ent.currMS = 0;
+			self.isDismounting = false;
 			self.isBusy = self.isHoldingAtk = true;
 			self.ent.isMoving = self.canCharge = self.canMove = false;
-			strcpy_s(self.status, self.ent.dir > 0 ? "right_chrg" : "left_chrg");
+			strcpy_s(self.status, "chrg");
+			return;
+		}
+		if (self.ent.isInAir && self.canPlunge)
+		{
+			PlayerResetAttacks(self, self.currAtkIndex + 1);
+			PlayerResetChargeAttack(self, 1);
+			self.currAtk = &self.chargeAtk[1].atk;
+			PlayerDecreaseStamina(self, self.currAtk->staminaCost);
+			self.ent.currMS = 0;
+			self.ent.verMS = -self.ent.vVel;
+			self.isBusy = true;
+			self.ent.isMoving = self.canCharge = self.canMove = false;
+			strcpy_s(self.status, "plunge");
 			return;
 		}
 	}
-	if (OnKeyPress(self.ctrls.attack) && !strstr(self.status, "chrg") && self.canAttack
+	if (OnKeyPress(self.ctrls.attack) && self.canAttack
 		&& self.currStamina > 0)
 	{
 		if (!self.ent.isInAir)
@@ -275,14 +312,15 @@ void PlayerInput(Player& self)
 		PlayerDecreaseStamina(self, self.currAtk->staminaCost);
 		self.isBusy = true;
 		self.canAttack = self.ent.isMoving = self.canMove = false;
-		strcpy_s(self.status, self.ent.dir > 0 ? "right_attack" : "left_attack");
+		strcpy_s(self.status, "attack");
 		return;
 	}
 	if (kb.state[self.ctrls.parry] && self.canParry && self.currStamina > 0)
 	{
 		self.isBusy = self.isHoldingParry = true;
 		self.canParry = self.canMove = self.ent.isMoving = false;
-		strcpy_s(self.status, self.ent.dir > 0 ? "right_parry" : "left_parry");
+		self.ent.currMS = 0;
+		strcpy_s(self.status, "parry");
 		return;
 	}
 	if (OnKeyPress(self.ctrls.evade) && self.canEvade)
@@ -292,29 +330,8 @@ void PlayerInput(Player& self)
 		strcat_s(self.status, "_evade");
 		return;
 	}
-	if (!self.canMove && !KeyHold(self.ctrls.left) && !KeyHold(self.ctrls.right))
-		self.canMove = true;
-	if (self.canMove)
-	{
-		self.ent.isMoving = kb.state[self.ctrls.left] + kb.state[self.ctrls.right] == 1;
-			if (self.ent.isMoving)
-			{
-				if (strstr(self.status, "_postattack"))
-				{
-					StrReplace(self.status, "_postattack", "");
-					PlayerAttackPenalty(self, 0.14);
-				}
-				self.ent.dir = -kb.state[self.ctrls.left] + kb.state[self.ctrls.right];
-				if (!strstr(self.status, "jump") && !strstr(self.status, "fall"))
-					strcpy_s(self.status, self.ent.dir > 0 ? "right_run" : "left_run");
-			}
-			else
-				StrReplace(self.status, "_run", "_idle");
-	}
 	
 	self.pressedCtrls.thrw = OnKeyPress(self.ctrls.thrw);
-
-	self.isDismounting = kb.state[self.ctrls.dismount];
 }
 
 void PlayerPlatformVerCollision(Player& self, Platform& platform)
@@ -322,7 +339,9 @@ void PlayerPlatformVerCollision(Player& self, Platform& platform)
 	if (!platform.vCollCheck)
 		return;
 	if (self.ent.verMS < 0.0f || !SDL_HasIntersection(&self.ent.rect, &platform.rect))
+	{
 		return;
+	}
 	if (self.isDismounting && platform.isDismountable)
 	{
 		self.isDismounting = false;
@@ -330,6 +349,8 @@ void PlayerPlatformVerCollision(Player& self, Platform& platform)
 	}
 	if (int(self.ent.pos.y + self.ent.rect.h - self.ent.verMS) > platform.rect.y)
 		return;
+	if (platform.isDismountable)
+		self.dOrder = PLATFORMS;
 	self.ent.isInAir = false;
 	self.ent.verMS = 0;
 	StrReplace(self.status, "jump", "idle");
@@ -360,7 +381,7 @@ void PlayerPlatformHorCollision(Player& self, Platform& platform)
 			return;
 		moveTo.x += platform.rect.w;
 	}
-	if (strstr(self.status, "_run"))
+	if (strstr(self.status, "run"))
 		StrReplace(self.status, "run", "idle");
 	self.ent.currMS = 0;
 	self.ent.isMoving = false;
@@ -410,19 +431,59 @@ bool PlayerProcessAttack(Player& self, Attack& atk, Uint16 dt)
 
 bool PlayerProcessChargeAttack(Player& self, Uint16 dt)
 {
-	if (self.isHoldingAtk && !strstr(self.status, "chrgAtk") || self.chargeAtk[0].chargeTime < MIN_CHARGE_TIME)
+	if (self.isHoldingAtk && !strstr(self.status, "Atk") || self.chargeAtk[0].chargeTime < MIN_CHARGE_TIME)
 	{
 		self.chargeAtk[0].chargeTime += dt;
 		return false;
 	}
 	if (!strstr(self.status, "chrgAtk") && !strstr(self.status, "chrgPostAtk"))
-		StrReplace(self.status, "_chrg", "_chrgAtk");
+		StrReplace(self.status, "chrg", "chrgAtk");
 	if (!strstr(self.status, "chrgPostAtk"))
 	{
 		if (PlayerProcessAttack(self, self.chargeAtk[0].atk, dt))
 		{
 			PlayerDecreaseStamina(self, self.currAtk->staminaCost);
 			StrReplace(self.status, "chrgAtk", "chrgPostAtk");
+			self.isBusy = true;
+		}
+		return false;
+	}
+	self.currAtk->currDur -= dt;
+	if (self.currAtk->currDur <= 0)
+	{
+		self.canMove = true;
+		self.isBusy = false;
+		return true;
+	}
+	return false;
+}
+
+bool PlayerProcessPlungeAttack(Player& self, Uint16 dt)
+{
+	ChargeAtk& atk = self.chargeAtk[1];
+	if (atk.chrgSprite.timeElapsed < atk.preChrgTime)
+	{
+		self.ent.verMS = -self.ent.vVel;
+		return false;
+	}
+	if (atk.chargeTime == 0)
+	{
+		self.ent.verMS = 10;
+	}
+	atk.chargeTime += dt;
+	if (self.ent.verMS > 0)
+	{
+		atk.chargeTime += dt;
+		self.ent.verMS = self.ent.vVel * 20;
+		return false;
+	}
+	if (!strstr(self.status, "plungeAtk") && !strstr(self.status, "plungePostAtk"))
+		StrReplace(self.status, "plunge", "plungeAtk");
+	if (!strstr(self.status, "plungePostAtk"))
+	{
+		if (PlayerProcessAttack(self, atk.atk, dt))
+		{
+			StrReplace(self.status, "plungeAtk", "plungePostAtk");
 			self.isBusy = true;
 		}
 		return false;
@@ -506,7 +567,7 @@ void PlayerAttackPenalty(Player& self, float duration)
 	self.atks[0].currCD = duration;
 	self.currAtkIndex = 0;
 	self.currAtk = self.atks;
-	StrReplace(self.status, "_attack", "");
+	StrReplace(self.status, "attack", "");
 }
 
 bool PlayerAttackCooldown(Player& self, Attack& atk, Uint16 dt)
@@ -555,7 +616,7 @@ void PlayerDisable(Player& self, float dur)
 	dur *= 1000;
 	PlayerResetAttacks(self, self.currAtkIndex + 1);
 	self.anims[HIT].timeElapsed = 0;
-	strcpy_s(self.status, self.ent.dir > 0 ? "right_hit" : "left_hit");
+	strcpy_s(self.status, "hit");
 	self.isDisabled = true;
 	self.ent.isMoving = self.isBusy = false;
 	self.disableDur = max(dur, self.disableDur);
@@ -568,7 +629,7 @@ void PlayerDisableElapse(Player& self, Uint16 dt)
 	{
 		self.disableDur = 0;
 		self.isDisabled = false;
-		StrReplace(self.status, "_hit", "_idle");
+		StrReplace(self.status, "hit", "idle");
 		self.canMove = true;
 	}
 }
@@ -595,12 +656,19 @@ void PlayerStaminaRecharge(Player& self, Uint16 dt)
 	}
 }
 
+void PlayerPhysics(Player& self)
+{
+	EntityUpdate(self.ent);
+	self.plungeRect.x = self.ent.rect.x;
+	self.plungeRect.y = self.ent.rect.y + self.ent.rect.h;
+}
+
 void PlayerUpdate(Player& self, Uint16 dt)
 {
 	if (self.currHP <= 0)
 	{
 		self.ent.isMoving = false;
-		strcpy_s(self.status, self.ent.dir > 0 ? "right_dead" : "left_dead");
+		strcpy_s(self.status, "dead");
 		return;
 	}
 	if (!self.isBusy)
@@ -609,10 +677,10 @@ void PlayerUpdate(Player& self, Uint16 dt)
 		PlayerDisableElapse(self, dt);
 	else if (self.isBusy)
 	{
-		if (strstr(self.status, "_attack"))
+		if (strstr(self.status, "attack"))
 		{
 			if (PlayerProcessAttack(self, *self.currAtk, dt))
-				StrReplace(self.status, "_attack", "_postattack");
+				StrReplace(self.status, "attack", "postAttack");
 		}
 		else if (strstr(self.status, "chrg"))
 		{
@@ -621,26 +689,33 @@ void PlayerUpdate(Player& self, Uint16 dt)
 				StrReplace(self.status, "chrgPostAtk", "idle");
 			}
 		}
+		else if (strstr(self.status, "plunge"))
+		{
+			if (PlayerProcessPlungeAttack(self, dt))
+			{
+				StrReplace(self.status, "plungePostAtk", "idle");
+			}
+		}
 		else if (strstr(self.status, "parry"))
 			PlayerProcessParry(self, dt);
 		else if (strstr(self.status, "evade"))
 			PlayerProcessEvade(self, dt);
 	}
 	PlayerProcessProjectiles(self, dt);
-	if (!strstr(self.status, "_attack"))
+	if (!strstr(self.status, "attack"))
 	{
-		if (strstr(self.status, "postattack"))
+		if (strstr(self.status, "postAttack"))
 		{
 			self.currAtk->currDur -= dt;
 			if (self.currAtk->currDur <= 0)
 			{
-				StrReplace(self.status, "postattack", "idle");
+				StrReplace(self.status, "postAttack", "idle");
 				self.canMove = true;
 			}
 		}
 		self.canAttack = PlayerAttackCooldown(self, self.atks[self.currAtkIndex], dt);
 	}
-	if (!strstr(self.status, "_chrg"))
+	if (!strstr(self.status, "chrg"))
 	{
 		self.canCharge = PlayerAttackCooldown(self, self.chargeAtk[0].atk, dt);
 	}
@@ -650,9 +725,9 @@ void PlayerUpdate(Player& self, Uint16 dt)
 	{
 		if (self.ent.verMS > 0 && !strstr(self.status, "jump"))
 		{
-			StrReplace(self.status, "_run", "");
-			StrReplace(self.status, "_idle", "");
-			strcat_s(self.status, "_jump");
+			StrReplace(self.status, "run", "");
+			StrReplace(self.status, "idle", "");
+			strcat_s(self.status, "jump");
 		}
 		if (self.ent.verMS > 20)
 		{
@@ -663,36 +738,40 @@ void PlayerUpdate(Player& self, Uint16 dt)
 	}
 }
 
-VanishText PlayerSpawnText(Player& self, const char* text, TTF_Font* font, int size, const SDL_Color& color)
+VanishText PlayerSpawnText(Player& self, const char* text, TTF_Font* font, int size, const SDL_Color& color, TTF_Font* outline)
 {
-	VanishText txt = VanishTextGenerate(text, font, size, color, 0.25, 0.09, 0.6);
+	VanishText txt = VanishTextGenerate(text, font, size, color, 0.25, 0.09, 0.6, outline);
 	VanishTextSetPos(txt, { EntityGetHorMid(self.ent) + RandInt(-self.ent.rect.w * 0.8, self.ent.rect.w * 0.8),
 		EntityGetVerMid(self.ent) - 20 + RandInt(-40, 20) });
 	return txt;
 }
 
-VanishText PlayerAttack(Player& self, Player& target, TTF_Font* font)
+VanishText PlayerAttack(Player& self, Player& target, TTF_Font* font, TTF_Font* outline)
 {
 	self.canDealDmg = false;
 	bool isCrit = RandInt(1, 100) <= self.critRate;
 	int dmg = self.currAtk->dmg + self.currAtk->dmg * isCrit;
 	Sint8 dir;
 	if (self.currAtk->dir == BOTH)
-		dir = RectGetHorMid(self.currAtk->hitbox) < EntityGetHorMid(target.ent) ? 1 : -1;
+		dir = RectGetHorMid(self.ent.rect) < EntityGetHorMid(target.ent) ? 1 : -1;
 	else
 		dir = self.currAtk->dir * self.ent.dir;
-	float chrgTime = strstr(self.status, "_attack") ? 1 : 1 + (self.chargeAtk[0].chargeTime - MIN_CHARGE_TIME) / 1000.0f;
+	float chrgTime = strstr(self.status, "attack") ? 1 :
+		strstr(self.status, "chrg") ? 1 + (self.chargeAtk[0].chargeTime - MIN_CHARGE_TIME) / 1000.0f :
+		1 + (self.chargeAtk[1].chargeTime - self.chargeAtk[1].preChrgTime) / 1000.0f;
 	dmg *= min(2, chrgTime);
-	int takenDmg = PlayerTakeHit(target, dmg, self.currAtk->stunDur, dir, self.currAtk->dmg * 0.054);
+	int takenDmg = PlayerTakeHit(target, dmg,
+		self.currAtk->stunDur + self.chargeAtk[1].preChrgTime * bool(strstr(self.status, "plunge")),
+		dir, self.currAtk->dmg * 0.054);
 	char buffer[10];
 	sprintf_s(buffer, "%i", dmg);
-	return PlayerSpawnText(target, buffer, font, RandInt(37, 44) + 15 * isCrit, { 230, 230, 230 });
+	return PlayerSpawnText(target, buffer, font, RandInt(21, 28) + 10 * isCrit, { 230, 230, 230 }, outline);
 }
 
 int PlayerTakeHit(Player& self, int dmg, int stunDur, int dir, int pushPower)
 {
 	PlayerResetAttacks(self, self.currAtkIndex + 1);
-	strcpy_s(self.status, self.ent.dir > 0 ? "right_hit" : "left_hit");
+	strcpy_s(self.status, "hit");
 	self.ent.dir = -dir;
 	self.ent.currMS = dir * pushPower;
 	self.anims[HIT].timeElapsed = 0;
@@ -729,6 +808,10 @@ void PlayerDraw(const Player& self)
 	SDL_SetRenderDrawColor(ren, 235, 223, 2, 255);
 	drawRect = RectTransformForCurrWin(self.staminaBar);
 	SDL_RenderFillRect(ren, &drawRect);
+
+	SDL_SetRenderDrawColor(ren, 20, 20, 20, 255);
+	drawRect = RectTransformForCurrWin({ RectGetHorMid(self.ent.rect) - 9, self.ent.rect.y - 32, 18, 18 });
+	SDL_RenderFillRect(ren, &drawRect);
 	SDL_SetRenderDrawColor(ren, self.color.r, self.color.g, self.color.b, 255);
 	drawRect = RectTransformForCurrWin({ RectGetHorMid(self.ent.rect) - 7, self.ent.rect.y - 30, 14, 14 });
 	SDL_RenderFillRect(ren, &drawRect);
@@ -736,15 +819,15 @@ void PlayerDraw(const Player& self)
 
 void PlayerAnimate(Player& self, Uint16 dt)
 {
-	SDL_RendererFlip flip = strstr(self.status, "right") ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
+	SDL_RendererFlip flip = self.ent.dir > 0 ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
 	if (true)
 	{
 		AnimatedSprite* anim = self.anims + FALL;
-		if (strstr(self.status, "attack") || strstr(self.status, "Atk"))
+		if (strstr(self.status, "ttack") || strstr(self.status, "Atk"))
 		{
 			anim = &self.currAtk->sprite;
 		}
-		else if (strstr(self.status, "_idle"))
+		else if (strstr(self.status, "idle"))
 		{
 			anim = self.anims + IDLE;
 		}
@@ -759,10 +842,14 @@ void PlayerAnimate(Player& self, Uint16 dt)
 			anim = self.anims + JUMP;
 		else if (strstr(self.status, "hit"))
 			anim = self.anims + HIT;
-		else if (strstr(self.status, "chrg"))
+		else if (strstr(self.status, "chrg") || strstr(self.status, "plunge"))
 		{
-			anim = &self.chargeAtk[0].chrgSprite;
-			anim->timeElapsed = max(self.chargeAtk[0].prePlungeFrameCount * anim->frameTime, anim->timeElapsed);
+			int i = strstr(self.status, "chrg") ? 0 : 1;
+			anim = &self.chargeAtk[i].chrgSprite;
+			if (anim->timeElapsed + dt >= anim->dur)
+			{
+				anim->timeElapsed = self.chargeAtk[i].preChrgTime - dt;
+			}
 		}
 		else if (strstr(self.status, "dead"))
 		{
@@ -790,7 +877,7 @@ void PlayerClear(Player& self)
 	{
 		ImageDestroy(self.atks[i].sprite.image);
 	}
-	for (chrgAtk& atk : self.chargeAtk)
+	for (ChargeAtk& atk : self.chargeAtk)
 	{
 		ImageDestroy(atk.chrgSprite.image);
 		ImageDestroy(atk.atk.sprite.image);

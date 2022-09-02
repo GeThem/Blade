@@ -15,6 +15,12 @@
 #define STAMINA_RECHARGE_CD 700
 #define STAMINA_RECHARGE_RATE 0.6
 
+typedef enum DrawOrder
+{
+	PLATFORMS,
+	FOREGROUND
+} DrawOrder;
+
 typedef struct Controls
 {
 	SDL_Scancode left, right, jump, dismount, evade;
@@ -58,16 +64,17 @@ typedef struct Attack
 	float dmg, staminaCost;
 } Attack;
 
-typedef struct chrgAtk
+typedef struct ChargeAtk
 {
 	Attack atk;
 	AnimatedSprite chrgSprite;
-	int prePlungeFrameCount = 0;
+	int preChrgTime = 0;
 	int chargeTime = 0;
-} chrgAtk;
+} ChargeAtk;
 
 typedef struct Player
 {
+	DrawOrder dOrder;
 	Entity ent;
 	Uint8 numberOfAttacks;
 	Sint8 currAtkIndex = 0;
@@ -76,8 +83,8 @@ typedef struct Player
 	SDL_Point spriteOffset;
 	AnimatedSprite* currSprite;
 	AnimatedSprite anims[6];
-	chrgAtk chargeAtk[2];
-	int critRate = 25;
+	ChargeAtk chargeAtk[2];
+	int critRate = 15;
 	bool isHoldingAtk = false, isHoldingParry = false;
 	char status[80] = "right";
 	float projBaseSpd, currEvadeDur, evadeDur, evadeCD, currEvadeCD, currStamina;
@@ -87,7 +94,7 @@ typedef struct Player
 	bool isDealingDmg = false, isThrowing = false, canEvade = true;
 	bool isDismounting = false, canParry = true;
 	bool isDisabled = false, isStunned = false;
-	bool canMove = true, canAttack = true, canDealDmg = true, canCharge = true;
+	bool canMove = true, canAttack = true, canDealDmg = true, canCharge = true, canPlunge = false;
 	int currStaminaCD = 0;
 	SDL_Rect plungeRect;
 	PressedControls pressedCtrls;
@@ -121,14 +128,15 @@ void PlayerDisableElapse(Player&, Uint16 dt);
 void PlayerDecreaseStamina(Player&, float amount);
 void PlayerStaminaRecharge(Player&, Uint16 dt);
 
+void PlayerPhysics(Player&);
 void PlayerUpdate(Player&, Uint16 dt);
 
 void PlayerDraw(const Player&);
 
-VanishText PlayerAttack(Player& self, Player& target, TTF_Font* font);
+VanishText PlayerAttack(Player& self, Player& target, TTF_Font* font, TTF_Font* outline=NULL);
 int PlayerTakeHit(Player&, int dmg, int stunDur, int dir, int pushPower);
 
-VanishText PlayerSpawnText(Player& self, const char* text, TTF_Font*, int size, const SDL_Color&);
+VanishText PlayerSpawnText(Player& self, const char* text, TTF_Font*, int size, const SDL_Color&, TTF_Font* outline=NULL);
 void PlayerAnimate(Player&, Uint16 dt);
 
 void PlayerDisable(Player&, float dur);

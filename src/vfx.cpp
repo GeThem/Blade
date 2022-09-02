@@ -2,7 +2,7 @@
 
 VanishText VanishTextGenerate(
 	const char* text, TTF_Font* font, int size, const SDL_Color& color,
-	float appearTime, float vanishTime, float existTime
+	float appearTime, float vanishTime, float existTime, TTF_Font* outline
 )
 {
 	VanishText self;
@@ -16,7 +16,9 @@ VanishText VanishTextGenerate(
 	else
 	{
 		TTF_SetFontSize(font, size);
-		RenderText(self.txtImg, font, text, {color.r, color.g, color.b, 255});
+		if (outline)
+			TTF_SetFontSize(outline, size);
+		RenderText(self.txtImg, font, text, {color.r, color.g, color.b, 255}, outline);
 	}
 	self.finalSize = self.txtImg.rect.h;
 	self.currentSize = self.finalSize * 5;

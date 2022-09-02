@@ -163,6 +163,7 @@ void GameLoop(App& app)
 		AppDelay(app);
 	} while (app.loopFlag != TOMENU);
 	app.loopFlag = MENU;
+	SDL_ShowCursor(SDL_ENABLE);
 }
 
 void AppMenuDraw(App& self)
@@ -202,11 +203,16 @@ void MenuLoop(App& app)
 	}
 	if (CurrMenuType(app) == MAINMENU && app.loopFlag == GAME)
 	{
-		GameInit(app.game, app.characters[0], app.characters[0], "");
+		GameInit(app.game, app.characters[0], app.characters[0], "map1");
+		if (app.menus[SETTINGSMENU].switchButtons[0].isActivated)
+			SDL_ShowCursor(SDL_DISABLE);
 	}
-	if (CurrMenuType(app) == INGAMEMENU && app.loopFlag == IG_BACKTOMENU)
+	if (CurrMenuType(app) == INGAMEMENU)
 	{
-		GameClose(app.game);
+		if (app.loopFlag == IG_BACKTOMENU)
+			GameClose(app.game);
+		else if (app.menus[SETTINGSMENU].switchButtons[0].isActivated)
+			SDL_ShowCursor(SDL_DISABLE);
 	}
 	app.restartGame = app.menuLeave[CurrMenuType(app)](app.currMenu, app.loopFlag);
 }

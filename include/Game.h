@@ -11,6 +11,7 @@
 #include "Projectile.h"
 #include "vfx.h"
 #include "List.h"
+#include "Bonuses.h"
 
 #define TOMENU 1
 
@@ -19,10 +20,14 @@ typedef struct Game
 	int time = 9000;
 	Player* drawPriority[2];
 	Player players[2];
-	Platform arena[10];
+	Map map;
 	VList texts;
-	TTF_Font* playersInteractionsFont;
+	TTF_Font* playersInteractionsFont, * playersInteractionsFontOutline;
+	DoubleDamage ddbonuses[2];
 } Game;
+
+VanishText GameSpawnText(const SDL_FPoint& pos, const char* text, TTF_Font* font, int size,
+	const SDL_Color& color, TTF_Font* outline = NULL);
 
 void GameLoadControls(Game&);
 

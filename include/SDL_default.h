@@ -4,6 +4,7 @@
 #define FRAME_DELAY (1000 / FPS)
 #define realW 1920
 #define realH 1080
+#define FONT_OUTLINE_SIZE 1
 
 
 #include <SDL.h>
@@ -64,7 +65,7 @@ Image ImageLoad(const char* filename);
 
 SDL_Texture* LoadTexture(const char* filename, SDL_Rect*);
 
-void RenderText(Image& textImg, TTF_Font* font, const char* string, const SDL_Color&);
+void RenderText(Image& textImg, TTF_Font* font, const char* string, const SDL_Color&, TTF_Font* outline=NULL);
 
 void ImageDestroy(Image&);
 
