@@ -162,7 +162,7 @@ void MapChoiceInit(App& self)
 		ChoiceButtonInit({ realW / 2 - 885, realH / 2 - 295, 870, 510 }, ImageLoad("data/maps/map1/preview.png"), cbStates, (int)MAP1),
 		ChoiceButtonInit({ realW / 2 + 15, realH / 2 - 295, 870, 510 }, ImageLoad("data/maps/map2/preview.png"), cbStates, (int)MAP2)
 	};
-	ChoiceMenuInit(self.menu, "Choose map", 2, buttons, MAPCHOICE);
+	ChoiceMenuInit(self.menu, "map select", 2, buttons, MAPCHOICE);
 }
 
 void CharChoiceInit(App& self, int charIndex)

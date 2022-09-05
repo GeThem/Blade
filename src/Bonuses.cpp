@@ -22,10 +22,7 @@ void DoubleDamageApply(Bonus& self, Player& player)
 	self.currDur = self.maxDur;
 	self.currCD = self.maxCD;
 	self.player = &player;
-	for (int i = 0; i < self.player->numberOfAttacks; i++)
-		self.player->atks[i].dmg *= 2;
-	for (int i = 0; i < 2; i++)
-		self.player->chargeAtk[i].atk.dmg *= 2;
+	player.currDmg *= 2;
 }
 
 void DoubleDamageUpdate(Bonus& self, Uint16 dt)
@@ -37,13 +34,10 @@ void DoubleDamageUpdate(Bonus& self, Uint16 dt)
 			self.currCD = 0;
 		return;
 	}
+	self.player->currDmg *= 2;
 	self.currDur -= dt;
 	if (self.currDur <= 0)
 	{
-		for (int i = 0; i < self.player->numberOfAttacks; i++)
-			self.player->atks[i].dmg /= 2;
-		for (int i = 0; i < 2; i++)
-			self.player->chargeAtk[i].atk.dmg /= 2;
 		self.player = NULL;
 		self.isAvailable = true;
 	}

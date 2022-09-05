@@ -77,6 +77,7 @@ typedef struct Player
 	AnimatedSprite* currSprite;
 	AnimatedSprite anims[6];
 	ChargeAtk chargeAtk[2];
+	int baseDmg, currDmg;
 	int critRate = 15;
 	bool isHoldingAtk = false, isHoldingParry = false;
 	char status[20] = "idle";

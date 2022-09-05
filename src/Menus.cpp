@@ -51,8 +51,8 @@ void SettingsMenuInit(Menu& self)
 	SDL_Color TBStates[3]{ {100, 100, 100, 255}, {196, 22, 22, 255}, {22, 196, 22, 255} };
 	self.textButtonsCount = 2;
 	self.textButtons = (TextButton*)malloc(sizeof(TextButton) * self.textButtonsCount);
-	self.textButtons[SM_SAVE] = TextButtonInit({ realW / 2 - 600, realH / 2 + 250, 500, 100 }, "SAVE", font, TBStates);
-	self.textButtons[SM_BACK] = TextButtonInit({ realW / 2 + 100, realH / 2 + 250, 500, 100 }, "BACK", font, TBStates);
+	self.textButtons[SM_SAVE] = TextButtonInit({ realW / 2 - 600, realH / 2 + 350, 500, 100 }, "SAVE", font, TBStates);
+	self.textButtons[SM_BACK] = TextButtonInit({ realW / 2 + 100, realH / 2 + 350, 500, 100 }, "BACK", font, TBStates);
 
 	TTF_SetFontSize(font, 50);
 	self.switchButtonsCount = 1;
@@ -145,8 +145,8 @@ void ChoiceMenuInit(Menu& self, const char* text, int choiceButtonsCount, Choice
 	SDL_Color states[3]{ {100, 100, 100, 255}, {196, 22, 22, 255}, {22, 196, 22, 255} };
 	self.textButtonsCount = 2;
 	self.textButtons = (TextButton*)malloc(sizeof(TextButton) * self.textButtonsCount);
-	self.textButtons[MC_APPLY] = TextButtonInit({ realW / 2 - 600, realH / 2 + 250, 500, 100 }, "APPLY", font, states);
-	self.textButtons[MC_BACK] = TextButtonInit({ realW / 2 + 100, realH / 2 + 250, 500, 100 }, "BACK", font, states);
+	self.textButtons[MC_APPLY] = TextButtonInit({ realW / 2 - 600, realH / 2 + 350, 500, 100 }, "CONFIRM", font, states);
+	self.textButtons[MC_BACK] = TextButtonInit({ realW / 2 + 100, realH / 2 + 350, 500, 100 }, "BACK", font, states);
 	
 	TTF_SetFontSize(font, 90);
 	self.textsCount = 1;

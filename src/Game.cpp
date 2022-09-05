@@ -118,24 +118,6 @@ Sint8 GameUpdate(Game& self, const Uint16& dt)
 
 	for (int i = 0; i < 2; i++)
 	{
-		self.ddbonuses[i].UpdateFunc(self.ddbonuses[i], dt);
-	}
-	for (int i = 0; i < 2; i++)
-	{
-		if (self.ddbonuses[i].isAvailable)
-		{
-			for (Player* player : self.drawPriority)
-				if (!strstr(player->status, "dead") && SDL_HasIntersection(&player->ent.rect, &self.ddbonuses[i].img.rect))
-				{
-					self.ddbonuses[i].ApplyFunc(self.ddbonuses[i], *player);
-					break;
-				}
-		}
-	}
-
-
-	for (int i = 0; i < 2; i++)
-	{
 		Player& player = self.players[i];
 		PlayerAnimate(player, dt);
 		player.hpBar.w = (i ? -1 : 1) * int(realW * 0.4f / player.maxHP * player.currHP);
@@ -165,7 +147,26 @@ Sint8 GameUpdate(Game& self, const Uint16& dt)
 	{
 		PlayerUpdate(player, dt);
 	}
-	// ATTACK
+
+	// BONUSES
+	for (int i = 0; i < 2; i++)
+	{
+		self.ddbonuses[i].UpdateFunc(self.ddbonuses[i], dt);
+	}
+	for (int i = 0; i < 2; i++)
+	{
+		if (self.ddbonuses[i].isAvailable)
+		{
+			for (Player* player : self.drawPriority)
+				if (!strstr(player->status, "dead") && SDL_HasIntersection(&player->ent.rect, &self.ddbonuses[i].img.rect))
+				{
+					self.ddbonuses[i].ApplyFunc(self.ddbonuses[i], *player);
+					break;
+				}
+		}
+	}
+
+	// PLAYER INTERACTIONS
 	if (self.players[0].isDealingDmg && self.players[1].isDealingDmg)
 	{
 		Player& p1 = self.players[0], & p2 = self.players[1];

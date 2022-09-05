@@ -33,7 +33,9 @@ void PlayerLoadCharacter(Player& self, const char* name)
 			self.ent.hVel = self.ent.maxMS / 12.0f;
 		}
 		else if (!strcmp(temp, "weight"))
-			self.ent.vVel = atof(val);
+			self.ent.vVel = atof(val);		
+		else if (!strcmp(temp, "base dmg"))
+			self.baseDmg = self.currDmg = atoi(val);
 		else if (!strcmp(temp, "hp"))
 			self.maxHP = atoi(val);
 		else if (!strcmp(temp, "stamina"))
@@ -66,7 +68,7 @@ void PlayerLoadCharacter(Player& self, const char* name)
 			{
 				fgets(temp, tempSize, file);
 				val = temp;
-				self.atks[i].dmg = atof(StrSplitInTwo(val, ' '));
+				self.atks[i].dmg = atof(StrSplitInTwo(val, ' ')) / 100.0f;
 				self.atks[i].dir = atof(StrSplitInTwo(val, ' '));
 				self.atks[i].hitboxOffset.x = atoi(StrSplitInTwo(val, ' '));
 				self.atks[i].hitboxOffset.y = atoi(StrSplitInTwo(val, ' '));
@@ -88,7 +90,7 @@ void PlayerLoadCharacter(Player& self, const char* name)
 			int i = strstr(temp, "plunge") ? 1 : 0;
 			fgets(temp, tempSize, file);
 			val = temp;
-			self.chargeAtk[i].atk.dmg = atof(StrSplitInTwo(val, ' '));
+			self.chargeAtk[i].atk.dmg = atof(StrSplitInTwo(val, ' ')) / 100.0f;
 			self.chargeAtk[i].atk.dir = atof(StrSplitInTwo(val, ' '));
 			self.chargeAtk[i].atk.hitboxOffset.x = atoi(StrSplitInTwo(val, ' '));
 			self.chargeAtk[i].atk.hitboxOffset.y = atoi(StrSplitInTwo(val, ' '));
@@ -614,6 +616,8 @@ void PlayerPhysics(Player& self)
 
 void PlayerUpdate(Player& self, Uint16 dt)
 {
+	self.currDmg = self.baseDmg;
+
 	if (self.currHP <= 0)
 	{
 		self.ent.isMoving = false;
@@ -697,7 +701,7 @@ VanishText PlayerAttack(Player& self, Player& target, TTF_Font* font, TTF_Font* 
 {
 	self.canDealDmg = false;
 	bool isCrit = RandInt(1, 100) <= self.critRate;
-	int dmg = self.currAtk->dmg + self.currAtk->dmg * isCrit;
+	int dmg = self.currAtk->dmg * self.currDmg * (isCrit ? 2 : 1);
 	Sint8 dir;
 	if (self.currAtk->dir == BOTH)
 		dir = RectGetHorMid(self.ent.rect) < EntityGetHorMid(target.ent) ? 1 : -1;
@@ -709,7 +713,7 @@ VanishText PlayerAttack(Player& self, Player& target, TTF_Font* font, TTF_Font* 
 	dmg *= min(2, chrgTime);
 	int takenDmg = PlayerTakeHit(target, dmg,
 		self.currAtk->stunDur + self.chargeAtk[1].preChrgTime * bool(strstr(self.status, "plunge")),
-		dir, self.currAtk->dmg * 0.054);
+		dir, self.baseDmg * 0.054);
 	char buffer[10];
 	sprintf_s(buffer, "%i", dmg);
 	return PlayerSpawnText(target, buffer, font, RandInt(21, 28) + 10 * isCrit, { 230, 230, 230 }, outline);
