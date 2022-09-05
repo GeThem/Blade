@@ -26,7 +26,7 @@ void GameInit(Game& self, const char* p1, const char* p2, const char* map)
 		PlayerReboot(player);
 		player.hpBar = { realW * i, 0, 0, 50 };
 		player.staminaBar = { realW * i, 60, 0, 20 };
-		player.color = { (Uint8)(150 * !i), 0, (Uint8)(150 * i) };
+		player.color = { (Uint8)(20 + 130 * !i), 20, (Uint8)(20 + 130 * i) };
 	}
 	MapLoad(self.map, map);
 }
@@ -63,8 +63,6 @@ void GameLoadControls(Game& self)
 			self.players[playerN].ctrls.attack = SDL_GetScancodeFromName(val);
 		else if (!strcmp(temp, "charge attack"))
 			self.players[playerN].ctrls.chargeAtk = SDL_GetScancodeFromName(val);
-		else if (!strcmp(temp, "throw"))
-			self.players[playerN].ctrls.thrw = SDL_GetScancodeFromName(val);
 		else if (!strcmp(temp, "parry"))
 			self.players[playerN].ctrls.parry = SDL_GetScancodeFromName(val);
 		else if (!strcmp(temp, "evade"))
@@ -80,7 +78,7 @@ void GameRestart(Game& self)
 		PlayerReboot(self.players[i]);
 		EntityMoveTo(self.players[i].ent, {(1.0f + 2.0f * i) * realW / 4.0f, realH / 5.0f });
 	}
-	ListClear(self.texts);
+	ListClear(self.vanishTexts);
 }
 
 void GameHandleArenaCollisions(Game& self)
@@ -92,11 +90,6 @@ void GameHandleArenaCollisions(Game& self)
 		for (int i = 0; i < self.map.platformsCount; i++)
 		{
 			Platform& platform = self.map.platforms[i];
-			for (Projectile& projectile : player.projectiles)
-			{
-				ProjectilePlatformHorCollision(projectile, platform);
-				ProjectilePlatformVerCollision(projectile, platform);
-			}
 			if (SDL_HasIntersection(&player.plungeRect, &platform.rect))
 				player.canPlunge = false;
 			PlayerPlatformVerCollision(player, platform);
@@ -108,21 +101,33 @@ void GameHandleArenaCollisions(Game& self)
 
 Sint8 GameUpdate(Game& self, const Uint16& dt)
 {
+	static bool returnedToMenu = false;
 	if (OnKeyPress(SDL_SCANCODE_ESCAPE))
 		return TOMENU;
+	if (!returnedToMenu)
+	{
+		for (Player& player : self.players)
+		{
+			if (player.currHP <= 0 && self.vanishTexts.head == NULL)
+			{
+				returnedToMenu = true;
+				return TOMENU;
+			}
+		}
+	}
 
 	for (int i = 0; i < 2; i++)
 	{
-		DoubleDamageUpdate(self.ddbonuses[i], dt);
+		self.ddbonuses[i].UpdateFunc(self.ddbonuses[i], dt);
 	}
 	for (int i = 0; i < 2; i++)
 	{
 		if (self.ddbonuses[i].isAvailable)
 		{
 			for (Player* player : self.drawPriority)
-				if (SDL_HasIntersection(&player->ent.rect, &self.ddbonuses[i].img.rect))
+				if (!strstr(player->status, "dead") && SDL_HasIntersection(&player->ent.rect, &self.ddbonuses[i].img.rect))
 				{
-					DoubleDamageApply(self.ddbonuses[i], *player);
+					self.ddbonuses[i].ApplyFunc(self.ddbonuses[i], *player);
 					break;
 				}
 		}
@@ -137,17 +142,17 @@ Sint8 GameUpdate(Game& self, const Uint16& dt)
 		player.staminaBar.w = (i ? -1 : 1) * int(realW * 0.3f / player.maxStamina * player.currStamina);
 	}
 
-	for (VLElem* curr = self.texts.curr; curr; )
+	for (VLElem* curr = self.vanishTexts.curr; curr; )
 	{
 		VanishTextUpdate(curr->val, dt);
 		if (curr->val.alpha == 0 && curr->val.existTime <= 0)
 		{
 			VanishTextDestroy(curr->val);
-			ListRemoveCurrent(self.texts);
-			curr = self.texts.curr;
+			ListRemoveCurrent(self.vanishTexts);
+			curr = self.vanishTexts.curr;
 			continue;
 		}
-		curr = ListNext(self.texts);
+		curr = ListNext(self.vanishTexts);
 	}
 
 	for (Player& player : self.players)
@@ -170,7 +175,7 @@ Sint8 GameUpdate(Game& self, const Uint16& dt)
 		{
 			VanishText txt = GameSpawnText({ (float)RectGetHorMid(inter) + RandInt(-5, 5), (float)RectGetVerMid(inter) + RandInt(-5, 5) },
 				"Clash", self.playersInteractionsFont, RandInt(37, 44), {250, 94, 32});
-			ListAppend(self.texts, txt);
+			ListAppend(self.vanishTexts, txt);
 			PlayerResetAttacks(p1, p1.currAtkIndex + 1);
 			PlayerResetAttacks(p2, p2.currAtkIndex + 1);
 			PlayerDisable(p1, 0.3);
@@ -222,7 +227,7 @@ Sint8 GameUpdate(Game& self, const Uint16& dt)
 								PlayerDisable(*recPl, 0.5);
 							}
 						}
-						ListAppend(self.texts, txt);
+						ListAppend(self.vanishTexts, txt);
 						break;
 					}
 				}
@@ -231,28 +236,23 @@ Sint8 GameUpdate(Game& self, const Uint16& dt)
 					atkPl->canDealDmg = false;
 					VanishText txt = PlayerSpawnText(*recPl, "Evade", self.playersInteractionsFont,
 						RandInt(37, 44), { 20, 247, 115 }, self.playersInteractionsFontOutline);
-					ListAppend(self.texts, txt);
+					ListAppend(self.vanishTexts, txt);
 					break;
 				}
 				//: p1.chargeAtk.dmg * min(1 + 0.002f * max(0, p1.chargeAtk.chargeTime - 100), 2);
-				ListAppend(self.texts, PlayerAttack(*atkPl, *recPl, self.playersInteractionsFont, self.playersInteractionsFontOutline));
+				ListAppend(self.vanishTexts, PlayerAttack(*atkPl, *recPl, self.playersInteractionsFont, self.playersInteractionsFontOutline));
 			}
 		}
 	}
-
 	return 0;
 }
 
 void GameDraw(Game& self)
 {
 	MapDrawBG(self.map);
-
-	for (const Player& player : self.players)
-		for (const Projectile& projectile : player.projectiles)
-			ProjectileDraw(projectile);
 	
-	for (DoubleDamage& bonus : self.ddbonuses)
-		DoubleDamageDraw(bonus);
+	for (Bonus& bonus : self.ddbonuses)
+		bonus.DrawFunc(bonus);
 
 	for (const Player* player : self.drawPriority)
 		if (player->dOrder == PLATFORMS)
@@ -266,7 +266,7 @@ void GameDraw(Game& self)
 	
 	MapDrawFG(self.map);
 
-	for (VLElem* curr = self.texts.curr; curr; curr = ListNext(self.texts))
+	for (VLElem* curr = self.vanishTexts.curr; curr; curr = ListNext(self.vanishTexts))
 	{
 		VanishTextDraw(curr->val);
 	}
@@ -278,8 +278,10 @@ void GameClose(Game& self)
 	{
 		PlayerClear(player);
 	}
-	ListClear(self.texts);
+	ListClear(self.vanishTexts);
 	MapDeinit(self.map);
 	TTF_CloseFont(self.playersInteractionsFont);
 	TTF_CloseFont(self.playersInteractionsFontOutline);
+	for (Bonus& bonus : self.ddbonuses)
+		BonusDeinit(bonus);
 }

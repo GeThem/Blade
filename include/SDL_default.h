@@ -5,7 +5,7 @@
 #define realW 1920
 #define realH 1080
 #define FONT_OUTLINE_SIZE 1
-
+#define NONE 100
 
 #include <SDL.h>
 #include <SDL_image.h>
@@ -70,3 +70,4 @@ void RenderText(Image& textImg, TTF_Font* font, const char* string, const SDL_Co
 void ImageDestroy(Image&);
 
 SDL_Rect RectTransformForCurrWin(SDL_Rect);
+void RectSetPos(SDL_Rect&, int x, int y);

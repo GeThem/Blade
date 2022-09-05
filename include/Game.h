@@ -8,7 +8,6 @@
 #include "Platform.h"
 #include "Player.h"
 #include "Platform.h"
-#include "Projectile.h"
 #include "vfx.h"
 #include "List.h"
 #include "Bonuses.h"
@@ -21,9 +20,9 @@ typedef struct Game
 	Player* drawPriority[2];
 	Player players[2];
 	Map map;
-	VList texts;
+	VList vanishTexts;
 	TTF_Font* playersInteractionsFont, * playersInteractionsFontOutline;
-	DoubleDamage ddbonuses[2];
+	Bonus ddbonuses[2];
 } Game;
 
 VanishText GameSpawnText(const SDL_FPoint& pos, const char* text, TTF_Font* font, int size,

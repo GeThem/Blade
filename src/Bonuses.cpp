@@ -1,10 +1,14 @@
 #include "Bonuses.h"
 
-void DoubleDamageInit(DoubleDamage& self, const SDL_Point& pos, float dur, float cd)
+void DoubleDamageInit(Bonus& self, const SDL_Point& pos, float dur, float cd)
 {
+	self.type = DOUBLE_DAMAGE;
+	self.ApplyFunc = DoubleDamageApply;
+	self.UpdateFunc = DoubleDamageUpdate;
+	self.DrawFunc = DoubleDamageDraw;
+
 	self.img = ImageLoad("data/bonuses/double damage.png");
-	self.img.rect.x = pos.x;
-	self.img.rect.y = pos.y;
+	RectSetPos(self.img.rect, pos.x, pos.y);
 	self.currDur = self.maxDur = dur * 1000.0f;
 	self.maxCD = cd * 1000.0f;
 	self.currCD = 0;
@@ -12,7 +16,7 @@ void DoubleDamageInit(DoubleDamage& self, const SDL_Point& pos, float dur, float
 	self.isAvailable = true;
 }
 
-void DoubleDamageApply(DoubleDamage& self, Player& player)
+void DoubleDamageApply(Bonus& self, Player& player)
 {
 	self.isAvailable = false;
 	self.currDur = self.maxDur;
@@ -24,7 +28,7 @@ void DoubleDamageApply(DoubleDamage& self, Player& player)
 		self.player->chargeAtk[i].atk.dmg *= 2;
 }
 
-void DoubleDamageUpdate(DoubleDamage& self, Uint16 dt)
+void DoubleDamageUpdate(Bonus& self, Uint16 dt)
 {
 	if (!self.player)
 	{
@@ -45,11 +49,16 @@ void DoubleDamageUpdate(DoubleDamage& self, Uint16 dt)
 	}
 }
 
-void DoubleDamageDraw(DoubleDamage& self)
+void DoubleDamageDraw(Bonus& self)
 {
 	if (self.isAvailable)
 	{
 		SDL_Rect drawRect = RectTransformForCurrWin(self.img.rect);
 		SDL_RenderCopy(ren, self.img.texture, NULL, &drawRect);
 	}
+}
+
+void BonusDeinit(Bonus& self)
+{
+	ImageDestroy(self.img);
 }

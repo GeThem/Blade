@@ -162,16 +162,20 @@ void RenderText(Image& textImg, TTF_Font* font, const char* string, const SDL_Co
 	SDL_Surface* bgSurface;
 	if (outline)
 	{
-		bgSurface = TTF_RenderText_Blended(outline, string, { 0, 0, 0, color.a });
-		SDL_Surface* fgSurface = TTF_RenderText_Blended(font, string, color);
-		SDL_Rect rect = { FONT_OUTLINE_SIZE, FONT_OUTLINE_SIZE, fgSurface->w, fgSurface->h };
+		
+		SDL_Surface* fgSurface = TTF_RenderText_Solid(outline, string, { 0, 0, 0, color.a });
+		SDL_Surface* fgSurface2 = TTF_RenderText_Solid(font, string, color);
+		bgSurface = SDL_CreateRGBSurface(0, fgSurface->w, fgSurface->h, 32, 0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000);
+		SDL_Rect rect = { FONT_OUTLINE_SIZE, FONT_OUTLINE_SIZE, fgSurface2->w, fgSurface2->h };
 
-		SDL_BlitSurface(fgSurface, NULL, bgSurface, &rect);
+		SDL_BlitSurface(fgSurface, NULL, bgSurface, NULL);
 		SDL_FreeSurface(fgSurface);
+		SDL_BlitSurface(fgSurface2, NULL, bgSurface, &rect);
+		SDL_FreeSurface(fgSurface2);
 	}
 	else
 	{
-		bgSurface = TTF_RenderText_Blended(font, string, color);
+		bgSurface = TTF_RenderText_Solid(font, string, color);
 	}
 	textImg.texture = SDL_CreateTextureFromSurface(ren, bgSurface);
 	textImg.rect.w = bgSurface->w;
@@ -193,4 +197,10 @@ SDL_Rect RectTransformForCurrWin(SDL_Rect rect)
 	rect.w = ceilf(rect.w * scale);
 	rect.h = ceilf(rect.h * scale);
 	return rect;
+}
+
+void RectSetPos(SDL_Rect& self, int x, int y)
+{
+	self.x = x;
+	self.y = y;
 }

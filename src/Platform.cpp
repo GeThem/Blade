@@ -22,7 +22,7 @@ void MapLoad(Map& self, const char* name)
 	StrReplace(temp, "fg", "platforms");
 	self.platformsLayer = ImageLoad(temp);
 	self.platformsLayer.rect.x = self.platformsLayer.rect.y = 0;
-	StrReplace(temp, "/platforms.png", ".txt");
+	StrReplace(temp, "platforms.png", "objects.txt");
 	FILE* file;
 	if (fopen_s(&file, temp, "r"))
 		exit(0);

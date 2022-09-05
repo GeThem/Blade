@@ -2,16 +2,27 @@
 #include "SDL_default.h"
 #include "Player.h"
 
-typedef struct DoubleDamage
+typedef enum BonusType
+{
+	DOUBLE_DAMAGE
+};
+
+typedef struct Bonus
 {
 	Image img;
 	int currDur, maxDur;
 	int currCD, maxCD;
 	Player* player;
 	bool isAvailable;
-} DoubleDamage;
+	int type;
+	void(*ApplyFunc)(Bonus&, Player&);
+	void(*UpdateFunc)(Bonus&, Uint16 dt);
+	void(*DrawFunc)(Bonus&);
+} Bonus;
 
-void DoubleDamageInit(DoubleDamage&, const SDL_Point&, float dur, float cd);
-void DoubleDamageApply(DoubleDamage&, Player&);
-void DoubleDamageUpdate(DoubleDamage&, Uint16 dt);
-void DoubleDamageDraw(DoubleDamage&);
+void DoubleDamageInit(Bonus&, const SDL_Point&, float dur, float cd);
+void DoubleDamageApply(Bonus&, Player&);
+void DoubleDamageUpdate(Bonus&, Uint16 dt);
+void DoubleDamageDraw(Bonus&);
+
+void BonusDeinit(Bonus&);

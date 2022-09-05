@@ -7,7 +7,6 @@
 #include "utils.h"
 #include "SDL_default.h"
 #include "Platform.h"
-#include "Projectile.h"
 #include "Entity.h"
 
 #define MIN_PARRY_DUR 170
@@ -27,15 +26,9 @@ typedef struct Controls
 	SDL_Scancode attack, chargeAtk, thrw, parry;
 } Controls;
 
-typedef struct PressedControls
-{
-	bool left = false, right = false, jump = false, dismount = false, evade = false;
-	bool attack = false, thrw = false, parry = false;
-} PressedControls;
-
 typedef enum Animations
 {
-	IDLE, RUN, JUMP, FALL, HIT, DEATH
+	IDLE=0, RUN=1, JUMP=2, FALL=3, HIT=4, DEATH=5
 } Animations;
 
 typedef struct AnimatedSprite
@@ -86,21 +79,19 @@ typedef struct Player
 	ChargeAtk chargeAtk[2];
 	int critRate = 15;
 	bool isHoldingAtk = false, isHoldingParry = false;
-	char status[80] = "right";
-	float projBaseSpd, currEvadeDur, evadeDur, evadeCD, currEvadeCD, currStamina;
+	char status[20] = "idle";
+	int currEvadeDur, evadeDur, evadeCD, currEvadeCD;
+	float currStamina;
 	int maxHP, currHP, maxStamina;
 	int parryCD, currParrCD, parryDur, currParrDur, disableDur;
 	bool isBusy = false;
-	bool isDealingDmg = false, isThrowing = false, canEvade = true;
+	bool isDealingDmg = false, canEvade = true;
 	bool isDismounting = false, canParry = true;
 	bool isDisabled = false, isStunned = false;
 	bool canMove = true, canAttack = true, canDealDmg = true, canCharge = true, canPlunge = false;
 	int currStaminaCD = 0;
 	SDL_Rect plungeRect;
-	PressedControls pressedCtrls;
-	Projectile projectiles[5];
 	SDL_Rect hpBar, staminaBar;
-	//int atk;
 	Controls ctrls;
 	SDL_Color color;
 } Player;
@@ -118,8 +109,6 @@ void PlayerProcessEvade(Player&, Uint16 dt);
 
 void PlayerResetAttacks(Player&, int number);
 void PlayerResetChargeAttack(Player&, int type);
-
-void PlayerProcessProjectiles(Player&, Uint16 dt);
 
 void PlayerPlatformVerCollision(Player&, Platform&);
 void PlayerPlatformHorCollision(Player&, Platform&);

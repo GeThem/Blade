@@ -20,6 +20,7 @@ typedef struct TextButton
 TextButton TextButtonInit(const SDL_Rect&, const char* text, TTF_Font*, const SDL_Color(&butStates)[3]);
 bool TextButtonUpdate(TextButton&);
 void TextButtonDraw(const TextButton&);
+void TextButtonDestroy(TextButton&);
 
 typedef struct SwitchButton
 {
@@ -32,3 +33,18 @@ typedef struct SwitchButton
 SwitchButton SwitchButtonInit(const SDL_Rect&, const char* text, TTF_Font*, const SDL_Color (&butStates)[4]);
 bool SwitchButtonUpdate(SwitchButton&);
 void SwitchButtonDraw(const SwitchButton&);
+void SwitchButtonDestroy(SwitchButton&);
+
+typedef struct ChoiceButton
+{
+	SDL_Rect rect, outlineRect;
+	int index;
+	Image image;
+	SDL_Color butStates[2];
+	bool isActivated = false;
+} ChoiceButton;
+
+ChoiceButton ChoiceButtonInit(const SDL_Rect&, const Image&, const SDL_Color(&butStates)[2], int index);
+bool ChoiceButtonUpdate(ChoiceButton&);
+void ChoiceButtonDraw(const ChoiceButton&);
+void ChoiceButtonDestroy(ChoiceButton&);

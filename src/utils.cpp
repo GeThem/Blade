@@ -2,17 +2,21 @@
 
 void StrReplace(char* text, const char* substring, const char* replaceWith)
 {
+	int textLen = strlen(text);
+	int secondPartLen = textLen;
 	int substringLen = strlen(substring);
 	int replaceWithLen = strlen(replaceWith);
-	char secondPart[50] = "";
+	char* secondPart = (char*)malloc(sizeof(char) * secondPartLen);
 	while ((text = strstr(text, substring)) != NULL)
 	{
-		strcpy_s(secondPart, text + substringLen);
+		textLen += replaceWithLen - substringLen + 1;
+		strcpy_s(secondPart, secondPartLen, text + substringLen);
 		*text = '\0';
-		strcat_s(text, 50, replaceWith);
-		strcat_s(text, 50, secondPart);
+		strcat_s(text, textLen, replaceWith);
+		strcat_s(text, textLen, secondPart);
 		text += replaceWithLen;
 	}
+	free(secondPart);
 }
 
 float RandFloat(float min, float max)

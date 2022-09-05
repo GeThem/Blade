@@ -5,7 +5,7 @@ void PlayerLoadCharacter(Player& self, const char* name)
 	const Uint8 tempSize = 100;
 	char temp[tempSize] = "data/characters/";
 	strcat_s(temp, name);
-	strcat_s(temp, ".txt");
+	strcat_s(temp, "/stats.txt");
 
 	FILE* file;
 	if (fopen_s(&file, temp, "r"))
@@ -38,8 +38,6 @@ void PlayerLoadCharacter(Player& self, const char* name)
 			self.maxHP = atoi(val);
 		else if (!strcmp(temp, "stamina"))
 			self.maxStamina = atoi(val);
-		else if (!strcmp(temp, "projectile spd"))
-			self.projBaseSpd = atof(val);
 		else if (!strcmp(temp, "parry"))
 		{
 			self.parryDur = atof(StrSplitInTwo(val, ' ')) * 1000.0f;
@@ -183,21 +181,11 @@ void PlayerReboot(Player& self)
 	self.currParrCD = self.parryCD;
 	self.currParrDur = self.parryDur;
 	self.isBusy = false;
-	self.isThrowing = self.isDismounting = false;
+	self.isDismounting = false;
 	self.canAttack = self.canEvade = self.canParry = true;
 	self.ent.currMS = self.ent.verMS = 0;
 	self.ent.isInAir = self.ent.isMoving = false;
 	self.ent.dir = 1;
-	self.pressedCtrls = {};
-	for (Projectile& projectile : self.projectiles)
-	{
-		projectile.wasThrown = false;
-		projectile.ent.pos = { 0, 0 };
-		projectile.ent.verMS = projectile.ent.currMS = 0;
-		projectile.ent.rect = { 0, 0, 50, 50 };
-		projectile.ent.vVel = 0.5;
-		projectile.pickCD = projectile.currPickCD = 1000;
-	}
 }
 
 void PlayerNextAttack(Player& self)
@@ -250,7 +238,7 @@ void PlayerInput(Player& self)
 			StrReplace(self.status, "run", "jump");
 			StrReplace(self.status, "idle", "jump");
 			StrReplace(self.status, "postAttack", "jump");
-
+			self.canMove = true;
 		}
 	}
 	if (self.isBusy)
@@ -330,8 +318,6 @@ void PlayerInput(Player& self)
 		strcat_s(self.status, "_evade");
 		return;
 	}
-	
-	self.pressedCtrls.thrw = OnKeyPress(self.ctrls.thrw);
 }
 
 void PlayerPlatformVerCollision(Player& self, Platform& platform)
@@ -339,9 +325,7 @@ void PlayerPlatformVerCollision(Player& self, Platform& platform)
 	if (!platform.vCollCheck)
 		return;
 	if (self.ent.verMS < 0.0f || !SDL_HasIntersection(&self.ent.rect, &platform.rect))
-	{
 		return;
-	}
 	if (self.isDismounting && platform.isDismountable)
 	{
 		self.isDismounting = false;
@@ -523,41 +507,6 @@ void PlayerProcessEvade(Player& self, Uint16 dt)
 	StrReplace(self.status, "_evade", "");
 }
 
-void PlayerThrowProjectile(Player& self, Projectile& projectile)
-{
-	projectile.ent.slideDir = projectile.ent.dir = self.ent.dir;
-	projectile.isPickable = self.pressedCtrls.thrw = self.isThrowing = false;
-	projectile.wasThrown = projectile.ent.isMoving = true;
-	projectile.ent.hVel = 0;
-	projectile.ent.currMS = self.ent.dir * self.projBaseSpd + self.ent.currMS;
-	projectile.ent.maxMS = fabs(projectile.ent.currMS);
-	projectile.ent.verMS = projectile.ent.vVel * -5;
-	SDL_FPoint moveTo{ self.ent.pos.x, self.ent.rect.y + self.ent.rect.h * 0.2f };
-	if (self.ent.dir == 1)
-		moveTo.x += self.ent.rect.w;
-	else
-		moveTo.x -= projectile.ent.rect.w;
-	EntityMoveTo(projectile.ent, moveTo);
-}
-
-void PlayerProcessProjectiles(Player& self, Uint16 dt)
-{
-	for (Projectile& projectile : self.projectiles)
-	{
-		if (self.pressedCtrls.thrw && !projectile.wasThrown)
-		{
-			PlayerThrowProjectile(self, projectile);
-			continue;
-		}
-		if (SDL_HasIntersection(&self.ent.rect, &projectile.ent.rect) && projectile.isPickable)
-		{
-			ProjectilePickUp(projectile);		
-			continue;
-		}
-		ProjectileUpdate(projectile, dt);
-	}
-}
-
 void PlayerAttackPenalty(Player& self, float duration)
 {
 	duration *= 1000.0f;
@@ -701,7 +650,7 @@ void PlayerUpdate(Player& self, Uint16 dt)
 		else if (strstr(self.status, "evade"))
 			PlayerProcessEvade(self, dt);
 	}
-	PlayerProcessProjectiles(self, dt);
+
 	if (!strstr(self.status, "attack"))
 	{
 		if (strstr(self.status, "postAttack"))
@@ -721,18 +670,16 @@ void PlayerUpdate(Player& self, Uint16 dt)
 	}
 	PlayerParryCooldown(self, dt);
 	PlayerEvadeCooldown(self, dt);
-	if (!self.isBusy && self.ent.isInAir && !strstr(self.status, "fall"))
+	if (!self.isBusy && self.ent.isInAir && !strstr(self.status, "fall") && !strstr(self.status, "hit"))
 	{
 		if (self.ent.verMS > 0 && !strstr(self.status, "jump"))
 		{
-			StrReplace(self.status, "run", "");
-			StrReplace(self.status, "idle", "");
-			strcat_s(self.status, "jump");
+			StrReplace(self.status, "run", "jump");
+			StrReplace(self.status, "idle", "jump");
 		}
 		if (self.ent.verMS > 20)
 		{
-			StrReplace(self.status, "jump", "");
-			strcat_s(self.status, "fall");
+			StrReplace(self.status, "jump", "fall");
 			return;
 		}
 	}
@@ -870,13 +817,9 @@ void PlayerAnimate(Player& self, Uint16 dt)
 void PlayerClear(Player& self)
 {
 	for (AnimatedSprite& anim : self.anims)
-	{
 		ImageDestroy(anim.image);
-	}
 	for (int i = 0; i < self.numberOfAttacks; i++)
-	{
 		ImageDestroy(self.atks[i].sprite.image);
-	}
 	for (ChargeAtk& atk : self.chargeAtk)
 	{
 		ImageDestroy(atk.chrgSprite.image);
