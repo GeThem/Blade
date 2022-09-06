@@ -10,7 +10,7 @@
 #include "Entity.h"
 
 #define MIN_PARRY_DUR 170
-#define MIN_CHARGE_TIME 100
+#define MIN_CHARGE_TIME 200
 #define STAMINA_RECHARGE_CD 700
 #define STAMINA_RECHARGE_RATE 0.6
 
@@ -28,7 +28,7 @@ typedef struct Controls
 
 typedef enum Animations
 {
-	IDLE=0, RUN=1, JUMP=2, FALL=3, HIT=4, DEATH=5
+	IDLE=0, RUN=1, JUMP=2, FALL=3, HIT=4, DEATH=5, PARRY=6
 } Animations;
 
 typedef struct AnimatedSprite
@@ -75,10 +75,10 @@ typedef struct Player
 	Attack* atks;
 	SDL_Point spriteOffset;
 	AnimatedSprite* currSprite;
-	AnimatedSprite anims[6];
+	AnimatedSprite anims[7];
 	ChargeAtk chargeAtk[2];
 	int baseDmg, currDmg;
-	int critRate = 15;
+	float baseCritRate = 15, currCritRate = 15;
 	bool isHoldingAtk = false, isHoldingParry = false;
 	char status[20] = "idle";
 	int currEvadeDur, evadeDur, evadeCD, currEvadeCD;

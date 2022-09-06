@@ -175,7 +175,7 @@ Sint8 GameUpdate(Game& self, const Uint16& dt)
 			&& p1.currAtk->dir * p1.ent.dir * p2.currAtk->dir * p2.ent.dir <= 0)
 		{
 			VanishText txt = GameSpawnText({ (float)RectGetHorMid(inter) + RandInt(-5, 5), (float)RectGetVerMid(inter) + RandInt(-5, 5) },
-				"Clash", self.playersInteractionsFont, RandInt(37, 44), {250, 94, 32});
+				"Clash", self.playersInteractionsFont, RandInt(27, 34), {250, 94, 32}, self.playersInteractionsFontOutline);
 			ListAppend(self.vanishTexts, txt);
 			PlayerResetAttacks(p1, p1.currAtkIndex + 1);
 			PlayerResetAttacks(p2, p2.currAtkIndex + 1);
@@ -208,7 +208,7 @@ Sint8 GameUpdate(Game& self, const Uint16& dt)
 						if (recPl->parryDur - recPl->currParrDur <= MIN_PARRY_DUR)
 						{
 							txt = PlayerSpawnText(*recPl, "Parry", self.playersInteractionsFont,
-								RandInt(37, 44), {20, 247, 115}, self.playersInteractionsFontOutline);
+								RandInt(27, 34), {20, 247, 115}, self.playersInteractionsFontOutline);
 							PlayerDecreaseStamina(*recPl, 0);
 							PlayerCancelParry(*recPl);
 							if (strstr(atkPl->status, "attack"))
@@ -220,7 +220,7 @@ Sint8 GameUpdate(Game& self, const Uint16& dt)
 						else
 						{
 							txt = PlayerSpawnText(*recPl, "Block", self.playersInteractionsFont,
-								RandInt(37, 44), {229, 240, 24}, self.playersInteractionsFontOutline);
+								RandInt(27, 34), {229, 240, 24}, self.playersInteractionsFontOutline);
 							recPl->ent.currMS = 5 * atkPl->ent.dir;
 							PlayerDecreaseStamina(*recPl, atkPl->currAtk->dmg * 0.09);
 							if (recPl->currStamina == 0)
@@ -236,7 +236,7 @@ Sint8 GameUpdate(Game& self, const Uint16& dt)
 				{
 					atkPl->canDealDmg = false;
 					VanishText txt = PlayerSpawnText(*recPl, "Evade", self.playersInteractionsFont,
-						RandInt(37, 44), { 20, 247, 115 }, self.playersInteractionsFontOutline);
+						RandInt(27, 34), { 20, 247, 115 }, self.playersInteractionsFontOutline);
 					ListAppend(self.vanishTexts, txt);
 					break;
 				}

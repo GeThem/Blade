@@ -20,7 +20,7 @@ typedef struct App
 	Menu menu;
 	Sint8 loopFlag = MENU;
 	bool restartGame = true, isFullscreen = false;
-	char characters[2][20]{ "Fantasy Warrior", "" };
+	char characters[2][20]{ "Fantasy Warrior", "Medieval Warrior" };
 	char maps[2][10]{ "map1", "map2" };
 	int map = NONE, p1Char = NONE, p2Char = NONE;
 	void (*MenuLeaveFuncs[4])(App&);

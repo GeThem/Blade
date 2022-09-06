@@ -152,12 +152,13 @@ void PlayerLoadCharacterSprites(Player& self, const char* name)
 		AnimationLoad(self.chargeAtk[i].atk.sprite, path);
 		StrReplace(path, buffer, "");
 	}
-	char files[][14] = { "Idle.png", "Run.png", "Jump.png", "Fall.png", "Take hit.png", "Death.png" };
-	for (int i = IDLE; i < 6; i++)
+	strcat_s(path, "*.png");
+	char files[][10] = { "Idle", "Run", "Jump", "Fall", "Take hit", "Death", "Parry"};
+	for (int i = IDLE; i < 7; i++)
 	{
-		strcat_s(path, files[i]);
+		StrReplace(path, "*", files[i]);
 		AnimationLoad(self.anims[i], path);
-		StrReplace(path, files[i], "");
+		StrReplace(path, files[i], "*");
 	}
 	self.currSprite = self.anims + IDLE;
 }
@@ -700,8 +701,12 @@ VanishText PlayerSpawnText(Player& self, const char* text, TTF_Font* font, int s
 VanishText PlayerAttack(Player& self, Player& target, TTF_Font* font, TTF_Font* outline)
 {
 	self.canDealDmg = false;
-	bool isCrit = RandInt(1, 100) <= self.critRate;
-	int dmg = self.currAtk->dmg * self.currDmg * (isCrit ? 2 : 1);
+	bool isCrit = RandInt(1, 100) <= self.currCritRate;
+	if (!isCrit)
+		self.currCritRate += 2.5;
+	else
+		self.currCritRate = self.baseCritRate;
+	int dmg = int(self.currAtk->dmg * self.currDmg) * (isCrit ? 2 : 1);
 	Sint8 dir;
 	if (self.currAtk->dir == BOTH)
 		dir = RectGetHorMid(self.ent.rect) < EntityGetHorMid(target.ent) ? 1 : -1;
@@ -716,7 +721,7 @@ VanishText PlayerAttack(Player& self, Player& target, TTF_Font* font, TTF_Font* 
 		dir, self.baseDmg * 0.054);
 	char buffer[10];
 	sprintf_s(buffer, "%i", dmg);
-	return PlayerSpawnText(target, buffer, font, RandInt(21, 28) + 10 * isCrit, { 230, 230, 230 }, outline);
+	return PlayerSpawnText(target, buffer, font, RandInt(21, 25) + 10 * isCrit, { 230, 230, 230 }, outline);
 }
 
 int PlayerTakeHit(Player& self, int dmg, int stunDur, int dir, int pushPower)
@@ -747,12 +752,12 @@ void PlayerDraw(const Player& self)
 	SDL_SetTextureAlphaMod(self.currSprite->image.texture, strstr(self.status, "evade") ? 100 : 255);
 	SDL_RenderCopyEx(ren, self.currSprite->image.texture, &self.currSprite->currFrame, &drawRect,
 		0, NULL, self.currSprite->flip);
-	//if (self.isDealingDmg)
-	//{
-	//	SDL_SetRenderDrawColor(ren, 0, 150, 0, 255);
-	//	drawRect = RectTransformForCurrWin(self.atks[self.currAtkIndex].hitbox);
-	//	SDL_RenderFillRect(ren, &drawRect);
-	//}
+	if (self.isDealingDmg)
+	{
+		SDL_SetRenderDrawColor(ren, 0, 150, 0, 255);
+		drawRect = RectTransformForCurrWin(self.atks[self.currAtkIndex].hitbox);
+		SDL_RenderFillRect(ren, &drawRect);
+	}
 	SDL_SetRenderDrawColor(ren, 200, 50, 50, 255);
 	drawRect = RectTransformForCurrWin(self.hpBar);
 	SDL_RenderFillRect(ren, &drawRect);
@@ -793,6 +798,8 @@ void PlayerAnimate(Player& self, Uint16 dt)
 			anim = self.anims + JUMP;
 		else if (strstr(self.status, "hit"))
 			anim = self.anims + HIT;
+		else if (strstr(self.status, "parry"))
+			anim = self.anims + PARRY;
 		else if (strstr(self.status, "chrg") || strstr(self.status, "plunge"))
 		{
 			int i = strstr(self.status, "chrg") ? 0 : 1;
