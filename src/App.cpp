@@ -5,7 +5,7 @@ void AppChangeResolution(App& self, const SDL_Point& resolution)
 	winW = resolution.x;
 	winH = resolution.y;
 	SDL_SetWindowSize(win, winW, winH);
-	double x = fmin(winW / 16.0, winH / 9.0);
+	float x = fmin(winW / 16.0f, winH / 9.0f);
 	scale = x / (realH / 9);
 	crd0 = { (winW - int(16 * x)) / 2, (winH - int(9 * x)) / 2 };
 }
@@ -19,11 +19,12 @@ void AppInit(App& self)
 	srand(time(0));
 	Init();
 	SDL_GetDesktopDisplayMode(0, &self.display);
-	DisplayInit(1920, 1080, "Blade", SDL_WindowFlags(SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE));
-	SDL_SetRenderDrawBlendMode(ren, SDL_BLENDMODE_BLEND);
-	double x = fmin(winW / 16.0, winH / 9.0);
+	float x = self.display.h * 0.75f / 9.0f;
 	scale = x / (realH / 9);
-	crd0 = { (winW - int(16 * x)) / 2, (winH - int(9 * x)) / 2 };
+	crd0 = { 0, 0 };
+	self.wModeRes = { int(1920 * scale), int(1080 * scale) };
+	DisplayInit(self.wModeRes.x, self.wModeRes.y, "Blade", SDL_WindowFlags(SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE));
+	SDL_SetRenderDrawBlendMode(ren, SDL_BLENDMODE_BLEND);
 	SettingsMenuInit(self.menu);
 	if (self.menu.switchButtons[0].isActivated)
 	{
@@ -280,7 +281,7 @@ void SettingsMenuLeave(App& app)
 					{
 						fprintf_s(tempFile, "fullscreen=0");
 						SDL_SetWindowFullscreen(win, 0);
-						AppChangeResolution(app, { 1920, 1080 });
+						AppChangeResolution(app, app.wModeRes);
 						SDL_SetWindowPosition(win, (app.display.w - winW) / 2, (app.display.h - winH) / 2);
 						app.isFullscreen = false;
 					}

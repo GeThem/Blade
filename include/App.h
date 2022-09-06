@@ -15,6 +15,7 @@ typedef struct App
 {
 	SDL_Event ev;
 	SDL_DisplayMode display;
+	SDL_Point wModeRes;
 	Uint32 lastTime = 0, currTime = 0, lastRenderedTime = 0, dt = 0;
 	Game game;
 	Menu menu;
