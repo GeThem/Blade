@@ -26,10 +26,25 @@ typedef struct Controls
 	SDL_Scancode attack, chargeAtk, thrw, parry;
 } Controls;
 
-typedef enum Animations
+typedef enum Status
 {
-	IDLE=0, RUN=1, JUMP=2, FALL=3, HIT=4, DEATH=5, PARRY=6
-} Animations;
+	IDLE = 0x0,
+	RUN = 0x1,
+	JUMP = 0x2,
+	FALL = 0x4,
+	HIT = 0x8,
+	DEAD = 0x10,
+	PARRY = 0x20,
+	ATTACK = 0x40,
+	POSTATTACK = 0x80,
+	CHRG = 0X100,
+	CHRGATK = 0x200,
+	CHRGPOSTATK = 0x400,
+	PLUNGE = 0x800,
+	PLUNGEATK = 0x1000,
+	PLUNGEPOSTATK = 0x2000,
+	EVADE = 0x4000
+} Status;
 
 typedef struct AnimatedSprite
 {
@@ -45,7 +60,7 @@ typedef enum AttackDir
 	BACKWARD = -1,
 	FORWARD = 1,
 	BOTH = 0
-};
+} AttackDir;
 
 typedef struct Attack
 {
@@ -80,7 +95,7 @@ typedef struct Player
 	int baseDmg, currDmg;
 	float baseCritRate = 15, currCritRate = 15;
 	bool isHoldingAtk = false, isHoldingParry = false;
-	char status[20] = "idle";
+	Uint16 status = IDLE;
 	int currEvadeDur, evadeDur, evadeCD, currEvadeCD;
 	float currStamina;
 	int maxHP, currHP, maxStamina;
@@ -96,6 +111,11 @@ typedef struct Player
 	Controls ctrls;
 	SDL_Color color;
 } Player;
+
+Uint16 PlayerGetStatus(Player&);
+void PlayerToggleStatus(Player&, Status);
+void PlayerSetStatus(Player&, Status);
+Uint16 GetAnim(Uint16 status);
 
 void PlayerLoadCharacter(Player&, const char* name);
 void PlayerLoadCharacterSprites(Player&, const char* name);

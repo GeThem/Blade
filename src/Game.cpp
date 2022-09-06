@@ -101,6 +101,7 @@ void GameHandleArenaCollisions(Game& self)
 
 Sint8 GameUpdate(Game& self, const Uint16& dt)
 {
+	std::cout << self.players[0].status << '\n';
 	static bool returnedToMenu = false;
 	if (OnKeyPress(SDL_SCANCODE_ESCAPE))
 		return TOMENU;
@@ -158,7 +159,7 @@ Sint8 GameUpdate(Game& self, const Uint16& dt)
 		if (self.ddbonuses[i].isAvailable)
 		{
 			for (Player* player : self.drawPriority)
-				if (!strstr(player->status, "dead") && SDL_HasIntersection(&player->ent.rect, &self.ddbonuses[i].img.rect))
+				if (PlayerGetStatus(*player) != DEAD && SDL_HasIntersection(&player->ent.rect, &self.ddbonuses[i].img.rect))
 				{
 					self.ddbonuses[i].ApplyFunc(self.ddbonuses[i], *player);
 					break;
@@ -197,7 +198,7 @@ Sint8 GameUpdate(Game& self, const Uint16& dt)
 		{
 			if (atkPl->canDealDmg && SDL_HasIntersection(&atkPl->currAtk->hitbox, &recPl->ent.rect))
 			{
-				if (strstr(recPl->status, "parry"))
+				if (PlayerGetStatus(*recPl) == PARRY)
 				{
 					int atkPlMid = EntityGetHorMid(atkPl->ent), recPlMid = EntityGetHorMid(recPl->ent);
 					int successParryDir = atkPlMid < recPlMid ? -1 : atkPlMid == recPlMid ? 0 : 1;
@@ -211,7 +212,7 @@ Sint8 GameUpdate(Game& self, const Uint16& dt)
 								RandInt(27, 34), {20, 247, 115}, self.playersInteractionsFontOutline);
 							PlayerDecreaseStamina(*recPl, 0);
 							PlayerCancelParry(*recPl);
-							if (strstr(atkPl->status, "attack"))
+							if (PlayerGetStatus(*atkPl) == ATTACK)
 							{
 								PlayerResetAttacks(*atkPl, atkPl->currAtkIndex + 1);
 								PlayerDisable(*atkPl, 0.3);
@@ -232,7 +233,7 @@ Sint8 GameUpdate(Game& self, const Uint16& dt)
 						break;
 					}
 				}
-				else if (strstr(recPl->status, "evade"))
+				else if (recPl->status & EVADE)
 				{
 					atkPl->canDealDmg = false;
 					VanishText txt = PlayerSpawnText(*recPl, "Evade", self.playersInteractionsFont,
