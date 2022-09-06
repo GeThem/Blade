@@ -12,7 +12,6 @@
 #define MIN_PARRY_DUR 170
 #define MIN_CHARGE_TIME 200
 #define STAMINA_RECHARGE_CD 700
-#define STAMINA_RECHARGE_RATE 0.6
 
 typedef enum DrawOrder
 {
@@ -86,28 +85,21 @@ typedef struct Player
 	Entity ent;
 	Uint8 numberOfAttacks;
 	Sint8 currAtkIndex = 0;
-	Attack* currAtk;
-	Attack* atks;
+	Attack* atks, * currAtk;
 	SDL_Point spriteOffset;
-	AnimatedSprite* currSprite;
-	AnimatedSprite anims[7];
+	AnimatedSprite anims[7], * currSprite;
 	ChargeAtk chargeAtk[2];
-	int baseDmg, currDmg;
-	float baseCritRate = 15, currCritRate = 15;
-	bool isHoldingAtk = false, isHoldingParry = false;
+	float baseCritRate = 15, currCritRate = 15, baseCritDmg = 0.5;
 	Uint16 status = IDLE;
-	int currEvadeDur, evadeDur, evadeCD, currEvadeCD;
-	float currStamina;
-	int maxHP, currHP, maxStamina;
+	int currEvadeDur, evadeDur, evadeCD, currEvadeCD, currStaminaCD;
+	float currStamina, stmRecharge = 0.6, currStmRecharge = 0.6;
+	int maxHP, currHP, maxStamina, baseDmg, currDmg;
 	int parryCD, currParrCD, parryDur, currParrDur, disableDur;
-	bool isBusy = false;
-	bool isDealingDmg = false, canEvade = true;
-	bool isDismounting = false, canParry = true;
-	bool isDisabled = false, isStunned = false;
+	bool isBusy = false, isDisabled = false, isDismounting = false, isDealingDmg = false;
 	bool canMove = true, canAttack = true, canDealDmg = true, canCharge = true, canPlunge = false;
-	int currStaminaCD = 0;
-	SDL_Rect plungeRect;
-	SDL_Rect hpBar, staminaBar;
+	bool canParry = true, canEvade = true, isHoldingAtk = false, isHoldingParry = false;
+	Uint8 activeBonuses = 0;
+	SDL_Rect plungeRect, hpBar, staminaBar;
 	Controls ctrls;
 	SDL_Color color;
 } Player;

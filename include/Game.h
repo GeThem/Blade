@@ -16,7 +16,8 @@
 
 typedef struct Game
 {
-	int time = 9000;
+	int roundTime = 3000, currTime, lastRenderedTime;
+	Image timer;
 	Player* drawPriority[2];
 	Player players[2];
 	Map map;
@@ -27,6 +28,8 @@ typedef struct Game
 
 VanishText GameSpawnText(const SDL_FPoint& pos, const char* text, TTF_Font* font, int size,
 	const SDL_Color& color, TTF_Font* outline = NULL);
+
+void GameRenderTime(Game&);
 
 void GameLoadControls(Game&);
 

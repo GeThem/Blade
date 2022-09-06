@@ -7,16 +7,36 @@ VanishText GameSpawnText(const SDL_FPoint& pos, const char* text, TTF_Font* font
 	return txt;
 }
 
+void GameRenderTime(Game& self)
+{
+	char buffer[3];
+	sprintf_s(buffer, "%02.0f", ceil(self.currTime / 1000.0f));
+	TTF_SetFontSize(self.playersInteractionsFont, 60);
+	TTF_SetFontSize(self.playersInteractionsFontOutline, 60);
+	SDL_Color color;
+	if (self.currTime > 10000)
+		color = { 230, 230, 230, 255 };
+	else
+		color = { 230, 50, 50, 255 };
+	RenderText(self.timer, self.playersInteractionsFont, buffer, color, self.playersInteractionsFontOutline);
+}
+
 void GameInit(Game& self, const char* p1, const char* p2, const char* map)
 {
+	self.playersInteractionsFont = TTF_OpenFont("data/fonts/PressStart2P-Regular.ttf", 50);
+	self.playersInteractionsFontOutline = TTF_OpenFont("data/fonts/PressStart2P-Regular.ttf", 50);
+	TTF_SetFontOutline(self.playersInteractionsFontOutline, FONT_OUTLINE_SIZE);
+
+	self.currTime = self.roundTime;
+	self.lastRenderedTime = self.roundTime / 1000;
+	GameRenderTime(self);
+	RectSetPos(self.timer.rect, (realW - self.timer.rect.w) / 2, 10);
+
 	for (int i = 0; i < 2; i++)
 	{
 		DoubleDamageInit(self.ddbonuses[i], { 100 + (realW - 220) * i, realH - 150 }, 10, 5);
 	}
 
-	self.playersInteractionsFont = TTF_OpenFont("data/fonts/PressStart2P-Regular.ttf", 50);
-	self.playersInteractionsFontOutline = TTF_OpenFont("data/fonts/PressStart2P-Regular.ttf", 50);
-	TTF_SetFontOutline(self.playersInteractionsFontOutline, FONT_OUTLINE_SIZE);
 	GameLoadControls(self);
 	for (Uint8 i = 0; i < 2; i++)
 	{
@@ -73,6 +93,8 @@ void GameLoadControls(Game& self)
 
 void GameRestart(Game& self)
 {
+	self.currTime = self.roundTime;
+	self.lastRenderedTime = self.roundTime / 10;
 	for (Uint8 i = 0; i < 2; i++)
 	{
 		PlayerReboot(self.players[i]);
@@ -94,14 +116,12 @@ void GameHandleArenaCollisions(Game& self)
 				player.canPlunge = false;
 			PlayerPlatformVerCollision(player, platform);
 			PlayerPlatformHorCollision(player, platform);
-		
 		}
 	}
 }
 
 Sint8 GameUpdate(Game& self, const Uint16& dt)
 {
-	std::cout << self.players[0].status << '\n';
 	static bool returnedToMenu = false;
 	if (OnKeyPress(SDL_SCANCODE_ESCAPE))
 		return TOMENU;
@@ -153,13 +173,11 @@ Sint8 GameUpdate(Game& self, const Uint16& dt)
 	for (int i = 0; i < 2; i++)
 	{
 		self.ddbonuses[i].UpdateFunc(self.ddbonuses[i], dt);
-	}
-	for (int i = 0; i < 2; i++)
-	{
 		if (self.ddbonuses[i].isAvailable)
 		{
 			for (Player* player : self.drawPriority)
-				if (PlayerGetStatus(*player) != DEAD && SDL_HasIntersection(&player->ent.rect, &self.ddbonuses[i].img.rect))
+				if (PlayerGetStatus(*player) != DEAD && SDL_HasIntersection(&player->ent.rect, &self.ddbonuses[i].img.rect)
+					&& !(player->activeBonuses & self.ddbonuses[i].type))
 				{
 					self.ddbonuses[i].ApplyFunc(self.ddbonuses[i], *player);
 					break;
@@ -246,6 +264,14 @@ Sint8 GameUpdate(Game& self, const Uint16& dt)
 			}
 		}
 	}
+	
+	self.currTime = max(0, self.currTime - dt);
+	if (ceilf(self.currTime / 1000.0f) != self.lastRenderedTime)
+	{
+		self.lastRenderedTime = ceilf(self.currTime / 1000.0f);
+		GameRenderTime(self);
+	}
+
 	return 0;
 }
 
@@ -265,6 +291,7 @@ void GameDraw(Game& self)
 	for (const Player* player : self.drawPriority)
 		if (player->dOrder == FOREGROUND)
 			PlayerDraw(*player);
+
 	
 	MapDrawFG(self.map);
 
@@ -272,6 +299,31 @@ void GameDraw(Game& self)
 	{
 		VanishTextDraw(curr->val);
 	}
+	
+	SDL_Rect drawRect;
+	int i = 0;
+	for (Player& player : self.players)
+	{
+		SDL_SetRenderDrawColor(ren, 200, 50, 50, 255);
+		drawRect = RectTransformForCurrWin(player.hpBar);
+		SDL_RenderFillRect(ren, &drawRect);
+		SDL_SetRenderDrawColor(ren, 235, 223, 2, 255);
+		drawRect = RectTransformForCurrWin(player.staminaBar);
+		SDL_RenderFillRect(ren, &drawRect);
+		for (Uint8 bonus = 1; bonus <= 2; bonus <<= 1)
+		{
+			if (player.activeBonuses & bonus)
+			{
+				drawRect = RectTransformForCurrWin(self.ddbonuses[0].img.rect);
+				RectSetPos(drawRect, 10 + (realW - 80) * i, 90);
+				SDL_RenderCopy(ren, self.ddbonuses[0].img.texture, NULL, &drawRect);
+			}
+		}
+		i++;
+	}
+
+	drawRect = RectTransformForCurrWin(self.timer.rect);
+	SDL_RenderCopy(ren, self.timer.texture, NULL, &drawRect);
 }
 
 void GameClose(Game& self)

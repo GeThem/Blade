@@ -64,7 +64,15 @@ void PlayerLoadCharacter(Player& self, const char* name)
 		else if (!strcmp(temp, "hp"))
 			self.maxHP = atoi(val);
 		else if (!strcmp(temp, "stamina"))
-			self.maxStamina = atoi(val);
+		{
+			self.maxStamina = atoi(StrSplitInTwo(val, ' '));
+			self.stmRecharge = self.currStmRecharge = atof(val);
+		}
+		else if (!strcmp(temp, "crit"))
+		{
+			self.baseCritRate = self.currCritRate = atoi(StrSplitInTwo(val, ' '));
+			self.baseCritDmg = atof(val) / 100.0f;
+		}
 		else if (!strcmp(temp, "parry"))
 		{
 			self.parryDur = atof(StrSplitInTwo(val, ' ')) * 1000.0f;
@@ -486,7 +494,7 @@ bool PlayerProcessPlungeAttack(Player& self, Uint16 dt)
 		return false;
 	}
 	if (PlayerGetStatus(self) == PLUNGE)
-		PlayerSetStatus(self, PLUNGE);
+		PlayerSetStatus(self, PLUNGEATK);
 	if (PlayerGetStatus(self) != PLUNGEPOSTATK)
 	{
 		if (PlayerProcessAttack(self, atk.atk, dt))
@@ -625,7 +633,7 @@ void PlayerStaminaRecharge(Player& self, Uint16 dt)
 	if (self.currStaminaCD <= 0)
 	{
 		self.currStaminaCD = 0;
-		self.currStamina = min(self.maxStamina, self.currStamina + STAMINA_RECHARGE_RATE);
+		self.currStamina = min(self.maxStamina, self.currStamina + self.currStmRecharge);
 	}
 }
 
@@ -720,7 +728,7 @@ VanishText PlayerAttack(Player& self, Player& target, TTF_Font* font, TTF_Font* 
 		self.currCritRate += 2.5;
 	else
 		self.currCritRate = self.baseCritRate;
-	int dmg = int(self.currAtk->dmg * self.currDmg) * (isCrit ? 2 : 1);
+	int dmg = int(self.currAtk->dmg * self.currDmg) * (1 + self.baseCritDmg * isCrit);
 	Sint8 dir;
 	if (self.currAtk->dir == BOTH)
 		dir = RectGetHorMid(self.ent.rect) < EntityGetHorMid(target.ent) ? 1 : -1;
@@ -766,19 +774,12 @@ void PlayerDraw(const Player& self)
 	SDL_SetTextureAlphaMod(self.currSprite->image.texture, self.status & EVADE ? 100 : 255);
 	SDL_RenderCopyEx(ren, self.currSprite->image.texture, &self.currSprite->currFrame, &drawRect,
 		0, NULL, self.currSprite->flip);
-	if (self.isDealingDmg)
-	{
-		SDL_SetRenderDrawColor(ren, 0, 150, 0, 255);
-		drawRect = RectTransformForCurrWin(self.atks[self.currAtkIndex].hitbox);
-		SDL_RenderFillRect(ren, &drawRect);
-	}
-	SDL_SetRenderDrawColor(ren, 200, 50, 50, 255);
-	drawRect = RectTransformForCurrWin(self.hpBar);
-	SDL_RenderFillRect(ren, &drawRect);
-	SDL_SetRenderDrawColor(ren, 235, 223, 2, 255);
-	drawRect = RectTransformForCurrWin(self.staminaBar);
-	SDL_RenderFillRect(ren, &drawRect);
-
+	//if (self.isDealingDmg)
+	//{
+	//	SDL_SetRenderDrawColor(ren, 0, 150, 0, 255);
+	//	drawRect = RectTransformForCurrWin(self.currAtk->hitbox);
+	//	SDL_RenderFillRect(ren, &drawRect);
+	//}
 	SDL_SetRenderDrawColor(ren, 20, 20, 20, 255);
 	drawRect = RectTransformForCurrWin({ RectGetHorMid(self.ent.rect) - 9, self.ent.rect.y - 32, 18, 18 });
 	SDL_RenderFillRect(ren, &drawRect);

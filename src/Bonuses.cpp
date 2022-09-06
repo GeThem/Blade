@@ -22,6 +22,7 @@ void DoubleDamageApply(Bonus& self, Player& player)
 	self.currDur = self.maxDur;
 	self.currCD = self.maxCD;
 	self.player = &player;
+	self.player->activeBonuses |= DOUBLE_DAMAGE;
 	player.currDmg *= 2;
 }
 
@@ -38,6 +39,7 @@ void DoubleDamageUpdate(Bonus& self, Uint16 dt)
 	self.currDur -= dt;
 	if (self.currDur <= 0)
 	{
+		self.player->activeBonuses &= ~DOUBLE_DAMAGE;
 		self.player = NULL;
 		self.isAvailable = true;
 	}
