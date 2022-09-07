@@ -11,7 +11,7 @@ typedef struct VanishText
 	float appearRate, vanishRate, sizeDecreaseRate;
 	int existTime;
 	int finalSize, currentSize;
-	int alpha;
+	float alpha;
 	Image txtImg;
 	bool isMoving = RandInt(0, 1);
 

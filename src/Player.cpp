@@ -295,6 +295,7 @@ void PlayerInput(Player& self)
 			self.isHoldingParry = KeyHold(self.ctrls.parry);
 			return;
 		}
+		return;
 	}
 	if (OnKeyPress(self.ctrls.chargeAtk) && self.currStamina > 0)
 	{
@@ -633,7 +634,7 @@ void PlayerStaminaRecharge(Player& self, Uint16 dt)
 	if (self.currStaminaCD <= 0)
 	{
 		self.currStaminaCD = 0;
-		self.currStamina = min(self.maxStamina, self.currStamina + self.currStmRecharge);
+		self.currStamina = fminf(self.maxStamina, self.currStamina + self.currStmRecharge);
 	}
 }
 
@@ -735,7 +736,7 @@ VanishText PlayerAttack(Player& self, Player& target, TTF_Font* font, TTF_Font* 
 	else
 		dir = self.currAtk->dir * self.ent.dir;
 	float chrgTime = PlayerGetStatus(self) == ATTACK ? 1 :
-		PlayerGetStatus(self) == CHRG ? 1 + (self.chargeAtk[0].chargeTime - MIN_CHARGE_TIME) / 1000.0f :
+		PlayerGetStatus(self) == CHRGATK ? 1 + (self.chargeAtk[0].chargeTime - MIN_CHARGE_TIME) / 1000.0f :
 		1 + (self.chargeAtk[1].chargeTime - self.chargeAtk[1].preChrgTime) / 1000.0f;
 	dmg *= min(2, chrgTime);
 	int takenDmg = PlayerTakeHit(target, dmg,

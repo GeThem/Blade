@@ -265,7 +265,7 @@ Sint8 GameUpdate(Game& self, const Uint16& dt)
 		}
 	}
 	
-	self.currTime = max(0, self.currTime - dt);
+	self.currTime = fmaxf(0, self.currTime - dt);
 	if (ceilf(self.currTime / 1000.0f) != self.lastRenderedTime)
 	{
 		self.lastRenderedTime = ceilf(self.currTime / 1000.0f);

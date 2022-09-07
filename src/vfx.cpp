@@ -9,7 +9,7 @@ VanishText VanishTextGenerate(
 	self.alpha = 1;
 	if (font == NULL)
 	{
-		font = TTF_OpenFont("data/fonts/JetBrainsMono-Bold.ttf", size);
+		font = TTF_OpenFont("data/fonts/PressStart2P-Regular.ttf", size);
 		RenderText(self.txtImg, font, text, { color.r, color.g, color.b, 255 });
 		TTF_CloseFont(font);
 	}
@@ -39,12 +39,8 @@ void VanishTextUpdate(VanishText& self, const Uint16& dt)
 {
 	if (self.existTime > 0 && self.currentSize != self.finalSize)
 	{
-		self.alpha += self.appearRate;
-		if (self.alpha > 255)
-			self.alpha = 255;
-		self.currentSize -= self.sizeDecreaseRate;
-		if (self.currentSize < self.finalSize)
-			self.currentSize = self.finalSize;
+		self.alpha = fminf(self.alpha + self.appearRate, 255);
+		self.currentSize = fmaxf(self.currentSize - self.sizeDecreaseRate, self.finalSize);
 		self.txtImg.rect.h = self.currentSize;
 		self.txtImg.rect.w = self.currentSize * self.ratio;
 		self.txtImg.rect.x = self.pos.x - self.txtImg.rect.w / 2;
@@ -56,9 +52,7 @@ void VanishTextUpdate(VanishText& self, const Uint16& dt)
 			VanishTextSetPos(self, { self.pos.x, self.pos.y - 0.4f });
 		if (self.existTime <= 0)
 		{
-			self.alpha -= self.vanishRate;
-			if (self.alpha < 0)
-				self.alpha = 0;
+			self.alpha = fmaxf(self.alpha - self.vanishRate, 0);
 		}
 		else
 		{
