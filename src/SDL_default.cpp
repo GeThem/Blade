@@ -1,12 +1,12 @@
-#include <stdio.h>
-
 #include "SDL_default.h"
 
-SDL_Window* win;
-SDL_Renderer* ren;
+SDL_Window* win = NULL;
+SDL_Renderer* ren = NULL;
 int winW, winH;
 Keyboard kb;
 Mouse mouse;
+float scale;
+SDL_Point crd0;
 
 void Init(Uint32 flags)
 {
@@ -75,6 +75,19 @@ void ScreenFill(Uint8 r, Uint8 g, Uint8 b, Uint8 a)
 	SDL_RenderFillRect(ren, &rect);
 }
 
+void BlackStrips()
+{
+	SDL_SetRenderDrawColor(ren, 0, 0, 0, 255);
+	SDL_Rect rect = { 0, 0, crd0.x, winH };
+	SDL_RenderFillRect(ren, &rect);
+	rect = { crd0.x, 0, winW - crd0.x, crd0.y };
+	SDL_RenderFillRect(ren, &rect);
+	rect = { crd0.x, winH - crd0.y, winW - crd0.x, crd0.y };
+	SDL_RenderFillRect(ren, &rect);
+	rect = { winW - crd0.x, crd0.y, crd0.x, winH - crd0.y * 2 };
+	SDL_RenderFillRect(ren, &rect);
+}
+
 int RectGetVerMid(const SDL_Rect& self)
 {
 	return self.y + self.h / 2;
@@ -96,6 +109,11 @@ bool OnKeyPress(const SDL_Scancode& key)
 	return kb.state[key] && !kb.stateLast[key];
 }
 
+bool KeyHold(const SDL_Scancode& key)
+{
+	return kb.state[key] && kb.stateLast[key];
+}
+
 void MouseUpdate()
 {
 	mouse.buttonsLast = mouse.buttons;
@@ -112,7 +130,7 @@ bool OnClick(const Uint8 buttonMask)
 	return mouse.buttons & buttonMask && !(mouse.buttonsLast & buttonMask);
 }
 
-Image LoadImage(const char* filename)
+Image ImageLoad(const char* filename)
 {
 	Image image;
 	image.texture = LoadTexture(filename, &image.rect);
@@ -136,14 +154,53 @@ SDL_Texture* LoadTexture(const char* filename, SDL_Rect* rect)
 	return texture;
 }
 
-void RenderText(Image& textImg, TTF_Font* font, const char* string, const SDL_Color& color)
+void RenderText(Image& textImg, TTF_Font* font, const char* string, const SDL_Color& color, TTF_Font* outline)
 {
 	if (textImg.texture != NULL)
 		SDL_DestroyTexture(textImg.texture);
-	SDL_Surface* surface = TTF_RenderText_Blended(font, string, color);
-	SDL_Texture* texture = SDL_CreateTextureFromSurface(ren, surface);
-	textImg.texture = texture;
-	textImg.rect.w = surface->w;
-	textImg.rect.h = surface->h;
-	SDL_FreeSurface(surface);
+	
+	SDL_Surface* bgSurface;
+	if (outline)
+	{
+		
+		SDL_Surface* fgSurface = TTF_RenderText_Solid(outline, string, { 0, 0, 0, color.a });
+		SDL_Surface* fgSurface2 = TTF_RenderText_Solid(font, string, color);
+		bgSurface = SDL_CreateRGBSurface(0, fgSurface->w, fgSurface->h, 32, 0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000);
+		SDL_Rect rect = { FONT_OUTLINE_SIZE, FONT_OUTLINE_SIZE, fgSurface2->w, fgSurface2->h };
+
+		SDL_BlitSurface(fgSurface, NULL, bgSurface, NULL);
+		SDL_FreeSurface(fgSurface);
+		SDL_BlitSurface(fgSurface2, NULL, bgSurface, &rect);
+		SDL_FreeSurface(fgSurface2);
+	}
+	else
+	{
+		bgSurface = TTF_RenderText_Solid(font, string, color);
+	}
+	textImg.texture = SDL_CreateTextureFromSurface(ren, bgSurface);
+	textImg.rect.w = bgSurface->w;
+	textImg.rect.h = bgSurface->h;
+	SDL_FreeSurface(bgSurface);
+
+	SDL_SetTextureBlendMode(textImg.texture, SDL_BLENDMODE_BLEND);
+}
+
+void ImageDestroy(Image& self)
+{
+	SDL_DestroyTexture(self.texture);
+}
+
+SDL_Rect RectTransformForCurrWin(SDL_Rect rect)
+{
+	rect.x = ceilf(rect.x * scale + crd0.x);
+	rect.y = ceilf(rect.y * scale + crd0.y);
+	rect.w = ceilf(rect.w * scale);
+	rect.h = ceilf(rect.h * scale);
+	return rect;
+}
+
+void RectSetPos(SDL_Rect& self, int x, int y)
+{
+	self.x = x;
+	self.y = y;
 }

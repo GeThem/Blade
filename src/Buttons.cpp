@@ -1,22 +1,20 @@
-#include "SDL_default.h"
 #include "Buttons.h"
 
-TextButton TextButtonInit(const SDL_Rect& rect, const char* text, TTF_Font* font, const SDL_Color* butStates)
+TextButton TextButtonInit(const SDL_Rect& rect, const char* text, TTF_Font* font, const SDL_Color(&butStates)[3])
 {
 	TextButton self{ rect };
 	RenderText(self.textImg, font, text, { 200, 200, 200, 255 });
-	self.textImg.rect.x = self.rect.x + (self.rect.w - self.textImg.rect.w) / 2;
-	self.textImg.rect.y = self.rect.y + (self.rect.h - self.textImg.rect.h) / 2;
+	RectSetPos(self.textImg.rect, rect.x + (rect.w - self.textImg.rect.w) / 2, rect.y + (rect.h - self.textImg.rect.h) / 2);
 	for (int i = 0; i < 3; i++)
 		self.butStates[i] = butStates[i];
 	self.currState = self.butStates;
-	SDL_SetTextureBlendMode(self.textImg.texture, SDL_BLENDMODE_BLEND);
 	return self;
 }
 
 bool TextButtonUpdate(TextButton& self)
 {
-	if (!SDL_PointInRect(&mouse.pos, &self.rect))
+	SDL_Rect rect = RectTransformForCurrWin(self.rect);
+	if (!SDL_PointInRect(&mouse.pos, &rect))
 	{
 		self.currState = self.butStates;
 		return false;
@@ -33,27 +31,34 @@ void TextButtonDraw(const TextButton& self)
 {
 	SDL_Color* c = self.currState;
 	SDL_SetRenderDrawColor(ren, c->r, c->g, c->b, c->a);
-	SDL_RenderFillRect(ren, &self.rect);
+	SDL_Rect drawRect = RectTransformForCurrWin(self.rect);
+	SDL_RenderFillRect(ren, &drawRect);
 	SDL_SetTextureAlphaMod(self.textImg.texture, c->a);
-	SDL_RenderCopy(ren, self.textImg.texture, NULL, &self.textImg.rect);
+	drawRect = RectTransformForCurrWin(self.textImg.rect);
+	SDL_RenderCopy(ren, self.textImg.texture, NULL, &drawRect);
 }
 
-SwitchButton SwitchButtonInit(const SDL_Rect& rect, const char* text, TTF_Font* font, const SDL_Color* butStates)
+void TextButtonDestroy(TextButton& self)
+{
+	ImageDestroy(self.textImg);
+	self.currState = NULL;
+}
+
+SwitchButton SwitchButtonInit(const SDL_Rect& rect, const char* text, TTF_Font* font, const SDL_Color(&butStates)[4])
 {
 	SwitchButton self{ rect };
 	RenderText(self.textImg, font, text, { 200, 200, 200, 255 });
-	self.textImg.rect.x = self.rect.x + self.rect.w + 10;
-	self.textImg.rect.y = self.rect.y + (self.rect.h - self.textImg.rect.h) / 2;
+	RectSetPos(self.textImg.rect, rect.x + rect.w + self.textImg.rect.h / 3, rect.y + (rect.h - self.textImg.rect.h) / 2);
 	for (int i = 0; i < 4; i++)
 		self.butStates[i] = butStates[i];
 	self.currState = self.butStates;
-	SDL_SetTextureBlendMode(self.textImg.texture, SDL_BLENDMODE_BLEND);
 	return self;
 }
 
 bool SwitchButtonUpdate(SwitchButton& self)
 {
-	if (!SDL_PointInRect(&mouse.pos, &self.rect))
+	SDL_Rect rect = RectTransformForCurrWin(self.rect);
+	if (!SDL_PointInRect(&mouse.pos, &rect))
 	{
 		self.currState = self.butStates + (self.isActivated ? PRESSED : INACTIVE);
 		return self.isActivated;
@@ -72,6 +77,56 @@ void SwitchButtonDraw(const SwitchButton& self)
 {
 	SDL_Color* c = self.currState;
 	SDL_SetRenderDrawColor(ren, c->r, c->g, c->b, c->a);
-	SDL_RenderFillRect(ren, &self.rect);
-	SDL_RenderCopy(ren, self.textImg.texture, NULL, &self.textImg.rect);
+	SDL_Rect drawRect = RectTransformForCurrWin(self.rect);
+	SDL_RenderFillRect(ren, &drawRect);
+	drawRect = RectTransformForCurrWin(self.textImg.rect);
+	SDL_RenderCopy(ren, self.textImg.texture, NULL, &drawRect);
+}
+
+void SwitchButtonDestroy(SwitchButton& self)
+{
+	ImageDestroy(self.textImg);
+	self.currState = NULL;
+}
+
+ChoiceButton ChoiceButtonInit(const SDL_Rect& rect, const Image& image, const SDL_Color(&butStates)[2], int index)
+{
+	ChoiceButton self{ rect };
+	self.index = index;
+	self.outlineRect = { rect.x - 5, rect.y - 5, rect.w + 10, rect.h + 10 };
+	self.image = image;
+	RectSetPos(self.image.rect, rect.x + (rect.w - image.rect.w) / 2, rect.y + (rect.h - image.rect.h) / 2);
+	for (int i = 0; i < 2; i++)
+		self.butStates[i] = butStates[i];
+	return self;
+}
+
+bool ChoiceButtonUpdate(ChoiceButton& self)
+{
+	SDL_Rect rect = RectTransformForCurrWin(self.rect);
+	return SDL_PointInRect(&mouse.pos, &rect) && OnClick(SDL_BUTTON_LMASK);
+}
+
+void ChoiceButtonDraw(const ChoiceButton& self)
+{
+	const SDL_Color* c;
+	SDL_Rect drawRect;
+	if (self.isActivated)
+	{
+		c = self.butStates + 1;
+		SDL_SetRenderDrawColor(ren, c->r, c->g, c->b, c->a);
+		drawRect = RectTransformForCurrWin(self.outlineRect);
+		SDL_RenderFillRect(ren, &drawRect);
+	}
+	c = self.butStates;
+	SDL_SetRenderDrawColor(ren, c->r, c->g, c->b, c->a);
+	drawRect = RectTransformForCurrWin(self.rect);
+	SDL_RenderFillRect(ren, &drawRect);
+	drawRect = RectTransformForCurrWin(self.image.rect);
+	SDL_RenderCopy(ren, self.image.texture, NULL, &drawRect);
+}
+
+void ChoiceButtonDestroy(ChoiceButton& self)
+{
+	ImageDestroy(self.image);
 }

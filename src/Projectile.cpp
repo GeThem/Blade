@@ -2,13 +2,11 @@
 
 void ProjectilePlatformVerCollision(Projectile& self, const Platform& platform)
 {
-	if (!self.ent.isMoving || !platform.vCollCheck)
-		return;
-	if (!SDL_HasIntersection(&self.ent.rect, &platform.rect))
+	if (!self.ent.isMoving || !platform.vCollCheck || !SDL_HasIntersection(&self.ent.rect, &platform.rect))
 		return;
 	self.isPickable = self.ent.isMoving = false;
 	SDL_FPoint moveTo{ self.ent.pos.x, platform.rect.y };
-	if (EntityGetVerMid(self.ent) <= RectGetVerMid(platform.rect))
+	if (self.ent.verMS > 0 && int(EntityGetVerMid(self.ent) - self.ent.verMS) < platform.rect.y)
 		moveTo.y -= self.ent.rect.h * 0.8f;
 	else
 		moveTo.y += platform.rect.h - self.ent.rect.h * 0.2f;
@@ -17,16 +15,22 @@ void ProjectilePlatformVerCollision(Projectile& self, const Platform& platform)
 
 void ProjectilePlatformHorCollision(Projectile& self, const Platform& platform)
 {
-	if (!self.ent.isMoving || !platform.hCollCheck)
-		return;
-	if (!SDL_HasIntersection(&self.ent.rect, &platform.rect))
+	if (!self.ent.isMoving || !platform.hCollCheck || !SDL_HasIntersection(&self.ent.rect, &platform.rect))
 		return;
 	self.isPickable = self.ent.isMoving = false;
 	SDL_FPoint moveTo{ platform.rect.x, self.ent.pos.y };
-	if (EntityGetHorMid(self.ent) <= RectGetHorMid(platform.rect))
+	if (self.ent.currMS > 0)
+	{
+		if (int(self.ent.pos.x + self.ent.rect.w - self.ent.currMS) > platform.rect.x)
+			return;
 		moveTo.x -= self.ent.rect.w * 0.8f;
+	}
 	else
+	{
+		if (int(self.ent.pos.x - self.ent.currMS) < platform.rect.x + platform.rect.w)
+			return;
 		moveTo.x += platform.rect.w - self.ent.rect.w * 0.2f;
+	}
 	EntityMoveTo(self.ent, moveTo);
 }
 
@@ -56,5 +60,6 @@ void ProjectileDraw(const Projectile& self)
 	if (!self.wasThrown)
 		return;
 	SDL_SetRenderDrawColor(ren, 100, 100, 0, 255);
-	SDL_RenderFillRect(ren, &self.ent.rect);
+	SDL_Rect drawRect = RectTransformForCurrWin(self.ent.rect);
+	SDL_RenderFillRect(ren, &drawRect);
 }

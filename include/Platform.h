@@ -1,6 +1,7 @@
 #pragma once
 
 #include "SDL_default.h"
+#include "utils.h"
 
 typedef struct Platform
 {
@@ -8,4 +9,21 @@ typedef struct Platform
 	bool hCollCheck = false, vCollCheck = true, isDismountable = false;
 } Platform;
 
-void PlatformDraw(const Platform&);
+typedef struct Map
+{
+	Image bg;
+	Image platformsLayer;
+	Image fg;
+	int platformsCount;
+	Platform* platforms;
+};
+
+void PlatformInit(Platform&, const SDL_Rect&, bool hColl, bool vColl, bool isDismountable);
+
+void MapLoad(Map&, const char* name);
+
+void MapDrawBG(Map&);
+void MapDrawPlatformsLayer(Map&);
+void MapDrawFG(Map&);
+
+void MapDeinit(Map&);

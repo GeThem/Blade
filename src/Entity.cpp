@@ -7,7 +7,12 @@ void EntityUpdate(Entity& self)
 		if (self.isInAir)
 			self.currMS += self.hVel * self.dir * 0.9f;
 		else
-			self.currMS += self.hVel * self.dir;
+		{
+			if (self.currMS * self.dir < 0)
+				self.currMS += 2 * self.hVel * self.dir;
+			else
+				self.currMS += self.hVel * self.dir;
+		}
 		if (fabsf(self.currMS) > self.maxMS)
 			self.currMS = self.maxMS * self.dir;
 	}
