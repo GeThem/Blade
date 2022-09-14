@@ -70,7 +70,7 @@ void PlayerLoadCharacter(Player& self, const char* name)
 		}
 		else if (!strcmp(temp, "crit"))
 		{
-			self.baseCritRate = self.currCritRate = atoi(StrSplitInTwo(val, ' '));
+			self.baseCritRate = self.currCritRate = atof(StrSplitInTwo(val, ' '));
 			self.baseCritDmg = atof(val) / 100.0f;
 		}
 		else if (!strcmp(temp, "parry"))
@@ -196,15 +196,15 @@ void PlayerLoadCharacterSprites(Player& self, const char* name)
 	self.currSprite = self.anims + IDLE;
 }
 
-void PlayerReboot(Player& self)
+void PlayerReboot(Player& self, Sint8 dir)
 {
 	self.dOrder = FOREGROUND;
 	self.currHP = self.maxHP;
 	self.currStamina = self.maxStamina;
-	self.currStaminaCD = 0;
+	self.currStaminaCD = self.currEvadeCD = self.currParrCD = 0;
 	self.currEvadeDur = self.evadeDur;
-	self.currEvadeCD = self.evadeCD;
-	for (int i = IDLE; i < 6; i++)
+	self.currParrDur = self.parryDur;
+	for (int i = 0; i < 7; i++)
 	{
 		self.anims[i].timeElapsed = 0;
 	}
@@ -213,15 +213,13 @@ void PlayerReboot(Player& self)
 	PlayerResetAttacks(self, self.numberOfAttacks);
 	self.currAtk = self.atks;
 	self.currAtkIndex = 0;
-	PlayerSetStatus(self, IDLE);
-	self.currParrCD = self.parryCD;
-	self.currParrDur = self.parryDur;
-	self.isBusy = false;
-	self.isDismounting = false;
+	self.status = IDLE;
+	self.activeBonuses = 0;
+	self.isBusy = self.isDismounting = false;
 	self.canAttack = self.canEvade = self.canParry = true;
 	self.ent.currMS = self.ent.verMS = 0;
 	self.ent.isInAir = self.ent.isMoving = false;
-	self.ent.dir = 1;
+	self.ent.dir = dir;
 }
 
 void PlayerNextAttack(Player& self)
@@ -342,6 +340,7 @@ void PlayerInput(Player& self)
 	{
 		self.isBusy = self.isHoldingParry = true;
 		self.canParry = self.canMove = self.ent.isMoving = false;
+		self.currParrDur = self.parryDur;
 		self.ent.currMS = 0;
 		PlayerSetStatus(self, PARRY);
 		return;
@@ -350,6 +349,7 @@ void PlayerInput(Player& self)
 	{
 		self.isBusy = true;
 		self.canEvade = false;
+		self.currEvadeDur = self.evadeDur;
 		PlayerToggleStatus(self, EVADE);
 		return;
 	}
@@ -517,6 +517,7 @@ bool PlayerProcessPlungeAttack(Player& self, Uint16 dt)
 
 void PlayerProcessParry(Player& self, Uint16 dt)
 {
+	self.currParrCD = self.parryCD;
 	if (self.isHoldingParry || self.parryDur - self.currParrDur <= MIN_PARRY_DUR)
 	{
 		self.currParrDur -= dt;
@@ -525,17 +526,16 @@ void PlayerProcessParry(Player& self, Uint16 dt)
 	}
 	self.isBusy = false;
 	self.canMove = true;
-	self.currParrDur = self.parryDur;
 	PlayerDecreaseStamina(self, 0);
 	PlayerSetStatus(self, IDLE);
 }
 
 void PlayerProcessEvade(Player& self, Uint16 dt)
 {
+	self.currEvadeCD = self.evadeCD;
 	self.currEvadeDur -= dt;
 	if (self.currEvadeDur > 0)
 		return;
-	self.currEvadeDur = self.evadeDur;
 	self.isBusy = false;
 	PlayerToggleStatus(self, EVADE);
 }
@@ -547,18 +547,17 @@ void PlayerAttackPenalty(Player& self, float duration)
 	PlayerResetAttacks(self, self.currAtkIndex + 1);
 	self.canAttack = self.isBusy = self.isDealingDmg = false;
 	self.atks[0].currCD = duration;
+	self.chargeAtk[0].atk.currCD = duration;
 	self.currAtkIndex = 0;
 	self.currAtk = self.atks;
-	self.status &= ~ATTACK;
+	self.status &= ~ATTACK & ~CHRGATK & ~PLUNGEATK;
 }
 
 bool PlayerAttackCooldown(Player& self, Attack& atk, Uint16 dt)
 {
 	atk.currCD -= dt;
 	if (atk.currCD > 0)
-	{
 		return false;
-	}
 	atk.currCD = 0;
 	return true;
 }
@@ -567,7 +566,6 @@ void PlayerCancelParry(Player& self)
 {
 	self.status &= ~PARRY;
 	self.canMove = true;
-	self.currParrDur = 0;
 	self.isBusy = false;
 }
 
@@ -578,7 +576,7 @@ void PlayerParryCooldown(Player& self, Uint16 dt)
 	self.currParrCD -= dt;
 	if (self.currParrCD > 0)
 		return;
-	self.currParrCD = self.parryCD;
+	self.currParrCD = 0;
 	self.canParry = true;
 }
 
@@ -589,14 +587,13 @@ void PlayerEvadeCooldown(Player& self, Uint16 dt)
 	self.currEvadeCD -= dt;
 	if (self.currEvadeCD > 0)
 		return;
-	self.currEvadeCD = self.evadeCD;
+	self.currEvadeCD = 0;
 	self.canEvade = true;
 }
 
 void PlayerDisable(Player& self, float dur)
 {
 	dur *= 1000;
-	PlayerResetAttacks(self, self.currAtkIndex + 1);
 	self.anims[GetAnim(HIT)].timeElapsed = 0;
 	PlayerSetStatus(self, HIT);
 	self.isDisabled = true;
@@ -648,6 +645,8 @@ void PlayerPhysics(Player& self)
 void PlayerUpdate(Player& self, Uint16 dt)
 {
 	self.currDmg = self.baseDmg;
+	self.currCritRate = self.baseCritRate;
+
 	if (self.currHP <= 0)
 	{
 		self.ent.isMoving = false;
@@ -669,23 +668,18 @@ void PlayerUpdate(Player& self, Uint16 dt)
 		else if (status >= CHRG && status <= CHRGPOSTATK)
 		{
 			if (PlayerProcessChargeAttack(self, dt))
-			{
 				PlayerSetStatus(self, IDLE);
-			}
 		}
 		else if (status >= PLUNGE && status <= PLUNGEPOSTATK)
 		{
 			if (PlayerProcessPlungeAttack(self, dt))
-			{
 				PlayerSetStatus(self, IDLE);
-			}
 		}
 		else if (status == PARRY)
 			PlayerProcessParry(self, dt);
 		else if (self.status & EVADE)
 			PlayerProcessEvade(self, dt);
 	}
-
 	if (status != ATTACK)
 	{
 		if (status == POSTATTACK)
@@ -724,7 +718,7 @@ VanishText PlayerSpawnText(Player& self, const char* text, TTF_Font* font, int s
 VanishText PlayerAttack(Player& self, Player& target, TTF_Font* font, TTF_Font* outline)
 {
 	self.canDealDmg = false;
-	bool isCrit = RandInt(1, 100) <= self.currCritRate;
+	bool isCrit = RandFloat(1, 100) <= self.currCritRate;
 	if (!isCrit)
 		self.currCritRate += 2.5;
 	else

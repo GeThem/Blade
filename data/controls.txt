@@ -1,0 +1,19 @@
+player=1
+jump=w
+dismount=s
+left=a
+right=d
+attack=f
+evade=t
+parry=r
+charge attack=g
+
+player=2
+jump=i
+dismount=k
+left=j
+right=l
+attack=;
+charge attack='
+evade=[
+parry=p

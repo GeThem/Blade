@@ -89,7 +89,7 @@ typedef struct Player
 	SDL_Point spriteOffset;
 	AnimatedSprite anims[7], * currSprite;
 	ChargeAtk chargeAtk[2];
-	float baseCritRate = 15, currCritRate = 15, baseCritDmg = 0.5;
+	float baseCritRate, currCritRate, baseCritDmg;
 	Uint16 status = IDLE;
 	int currEvadeDur, evadeDur, evadeCD, currEvadeCD, currStaminaCD;
 	float currStamina, stmRecharge = 0.6, currStmRecharge = 0.6;
@@ -111,7 +111,7 @@ Uint16 GetAnim(Uint16 status);
 
 void PlayerLoadCharacter(Player&, const char* name);
 void PlayerLoadCharacterSprites(Player&, const char* name);
-void PlayerReboot(Player&);
+void PlayerReboot(Player&, Sint8 dir);
 
 void PlayerInput(Player&);
 //Duration in secs

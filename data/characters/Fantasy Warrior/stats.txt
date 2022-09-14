@@ -6,7 +6,7 @@ evade=0.25 4
 weight=1.7
 ms=10
 hp=5200
-crit=30 150
+crit=30 50
 stamina=150 0.6
 animations=7
 1 0.5 0.3 0.3 0.5 0.5 0.5
@@ -18,6 +18,8 @@ charge atk=
 99.2 1 40 120 210 260 0.121 0.122 0.216 1 0.7 35 0 0.3
 plunge atk=
 99.2 0 235 120 435 260 0.122 0.216 0 0.7 35 0.15 0.23
+
+//crit=critRate critDmg
 
 //atks=n_of_attacks
 dmg% dir hitbox_offset_x hitbox_offset_y hitbox_x hitbox_y delay atk_dur post_atk_dur cd stunDur stamina_cost

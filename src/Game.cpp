@@ -43,7 +43,7 @@ void GameInit(Game& self, const char* p1, const char* p2, const char* map)
 		Player& player = self.players[i];
 		self.drawPriority[i] = &player;
 		PlayerLoadCharacter(player, i == 0 ? p1 : p2);
-		PlayerReboot(player);
+		PlayerReboot(player, i == 1 ? -1 : 1);
 		player.hpBar = { realW * i, 0, 0, 50 };
 		player.staminaBar = { realW * i, 60, 0, 20 };
 		player.color = { (Uint8)(20 + 130 * !i), 20, (Uint8)(20 + 130 * i) };
@@ -54,7 +54,7 @@ void GameInit(Game& self, const char* p1, const char* p2, const char* map)
 void GameLoadControls(Game& self)
 {
 	FILE* file;
-	if (fopen_s(&file, "data/config.txt", "r"))
+	if (fopen_s(&file, "data/controls.txt", "r"))
 		exit(0);
 	char temp[40];
 	Uint8 playerN = SDL_MAX_UINT8;
@@ -97,8 +97,13 @@ void GameRestart(Game& self)
 	self.lastRenderedTime = self.roundTime / 10;
 	for (Uint8 i = 0; i < 2; i++)
 	{
-		PlayerReboot(self.players[i]);
+		PlayerReboot(self.players[i], i == 1 ? -1 : 1);
 		EntityMoveTo(self.players[i].ent, {(1.0f + 2.0f * i) * realW / 4.0f, realH / 5.0f });
+	}
+	for (Bonus& bonus : self.ddbonuses)
+	{
+		bonus.player = NULL;
+		bonus.isAvailable = true;
 	}
 	ListClear(self.vanishTexts);
 }
@@ -122,6 +127,8 @@ void GameHandleArenaCollisions(Game& self)
 
 Sint8 GameUpdate(Game& self, const Uint16& dt)
 {
+	std::cout << self.players[0].currEvadeCD << "  " << self.players[0].currParrCD << "  " << self.players[0].currAtk->currCD <<
+		"  " << self.players[0].currStaminaCD << "  " << self.players[0].currAtk->currDur << "  " << self.players[0].currParrDur << '\n';
 	static bool returnedToMenu = false;
 	if (OnKeyPress(SDL_SCANCODE_ESCAPE))
 		return TOMENU;
@@ -194,7 +201,7 @@ Sint8 GameUpdate(Game& self, const Uint16& dt)
 			&& p1.currAtk->dir * p1.ent.dir * p2.currAtk->dir * p2.ent.dir <= 0)
 		{
 			VanishText txt = GameSpawnText({ (float)RectGetHorMid(inter) + RandInt(-5, 5), (float)RectGetVerMid(inter) + RandInt(-5, 5) },
-				"Clash", self.playersInteractionsFont, RandInt(27, 34), {250, 94, 32}, self.playersInteractionsFontOutline);
+				"Clash", self.playersInteractionsFont, RandInt(27, 34), { 250, 94, 32 }, self.playersInteractionsFontOutline);
 			ListAppend(self.vanishTexts, txt);
 			PlayerResetAttacks(p1, p1.currAtkIndex + 1);
 			PlayerResetAttacks(p2, p2.currAtkIndex + 1);
@@ -205,65 +212,62 @@ Sint8 GameUpdate(Game& self, const Uint16& dt)
 	Player* atkPl = NULL, * recPl = NULL;
 	for (int i = 0; i < 2; i++)
 	{
-		if (self.players[i].isDealingDmg)
+		if (!self.players[i].isDealingDmg)
+			continue;
+		atkPl = &self.players[i];
+		recPl = &self.players[!i];
+		self.drawPriority[1] = atkPl;
+		self.drawPriority[0] = recPl;
+		if (recPl->currHP > 0 &&
+			atkPl->canDealDmg && SDL_HasIntersection(&atkPl->currAtk->hitbox, &recPl->ent.rect))
 		{
-			atkPl = &self.players[i];
-			recPl = &self.players[!i];
-			self.drawPriority[1] = atkPl;
-			self.drawPriority[0] = recPl;
-		}
-		if (atkPl && recPl->currHP > 0)
-		{
-			if (atkPl->canDealDmg && SDL_HasIntersection(&atkPl->currAtk->hitbox, &recPl->ent.rect))
+			if (recPl->status & EVADE)
 			{
-				if (PlayerGetStatus(*recPl) == PARRY)
+				atkPl->canDealDmg = false;
+				VanishText txt = PlayerSpawnText(*recPl, "Evade", self.playersInteractionsFont,
+					RandInt(27, 34), { 20, 247, 115 }, self.playersInteractionsFontOutline);
+				ListAppend(self.vanishTexts, txt);
+				break;
+			}
+			if (PlayerGetStatus(*recPl) == PARRY)
+			{
+				int atkPlMid = EntityGetHorMid(atkPl->ent), recPlMid = EntityGetHorMid(recPl->ent);
+				int successParryDir = atkPlMid < recPlMid ? -1 : atkPlMid == recPlMid ? 0 : 1;
+				if (successParryDir * recPl->ent.dir >= 0)
 				{
-					int atkPlMid = EntityGetHorMid(atkPl->ent), recPlMid = EntityGetHorMid(recPl->ent);
-					int successParryDir = atkPlMid < recPlMid ? -1 : atkPlMid == recPlMid ? 0 : 1;
-					if (successParryDir * recPl->ent.dir >= 0)
-					{
-						VanishText txt;
-						atkPl->canDealDmg = false;
-						if (recPl->parryDur - recPl->currParrDur <= MIN_PARRY_DUR)
-						{
-							txt = PlayerSpawnText(*recPl, "Parry", self.playersInteractionsFont,
-								RandInt(27, 34), {20, 247, 115}, self.playersInteractionsFontOutline);
-							PlayerDecreaseStamina(*recPl, 0);
-							PlayerCancelParry(*recPl);
-							if (PlayerGetStatus(*atkPl) == ATTACK)
-							{
-								PlayerResetAttacks(*atkPl, atkPl->currAtkIndex + 1);
-								PlayerDisable(*atkPl, 0.3);
-							}
-						}
-						else
-						{
-							txt = PlayerSpawnText(*recPl, "Block", self.playersInteractionsFont,
-								RandInt(27, 34), {229, 240, 24}, self.playersInteractionsFontOutline);
-							recPl->ent.currMS = 5 * atkPl->ent.dir;
-							PlayerDecreaseStamina(*recPl, atkPl->currAtk->dmg * 0.09);
-							if (recPl->currStamina == 0)
-							{
-								PlayerDisable(*recPl, 0.5);
-							}
-						}
-						ListAppend(self.vanishTexts, txt);
-						break;
-					}
-				}
-				else if (recPl->status & EVADE)
-				{
+					VanishText txt;
 					atkPl->canDealDmg = false;
-					VanishText txt = PlayerSpawnText(*recPl, "Evade", self.playersInteractionsFont,
-						RandInt(27, 34), { 20, 247, 115 }, self.playersInteractionsFontOutline);
+					if (recPl->parryDur - recPl->currParrDur <= MIN_PARRY_DUR)
+					{
+						txt = PlayerSpawnText(*recPl, "Parry", self.playersInteractionsFont,
+							RandInt(27, 34), { 20, 247, 115 }, self.playersInteractionsFontOutline);
+						PlayerDecreaseStamina(*recPl, 0);
+						PlayerCancelParry(*recPl);
+						if (PlayerGetStatus(*atkPl) == ATTACK)
+						{
+							PlayerAttackPenalty(*atkPl, 0.6);
+							PlayerDisable(*atkPl, 0.3);
+						}
+					}
+					else
+					{
+						txt = PlayerSpawnText(*recPl, "Block", self.playersInteractionsFont,
+							RandInt(27, 34), { 229, 240, 24 }, self.playersInteractionsFontOutline);
+						recPl->ent.currMS = 5 * atkPl->ent.dir;
+						PlayerDecreaseStamina(*recPl, atkPl->currAtk->dmg * atkPl->currDmg * 0.09);
+						if (recPl->currStamina == 0)
+						{
+							PlayerDisable(*recPl, 0.5);
+						}
+					}
 					ListAppend(self.vanishTexts, txt);
 					break;
 				}
-				//: p1.chargeAtk.dmg * min(1 + 0.002f * max(0, p1.chargeAtk.chargeTime - 100), 2);
-				ListAppend(self.vanishTexts, PlayerAttack(*atkPl, *recPl, self.playersInteractionsFont, self.playersInteractionsFontOutline));
 			}
+			ListAppend(self.vanishTexts, PlayerAttack(*atkPl, *recPl, self.playersInteractionsFont, self.playersInteractionsFontOutline));
 		}
 	}
+
 	
 	self.currTime = fmaxf(0, self.currTime - dt);
 	if (ceilf(self.currTime / 1000.0f) != self.lastRenderedTime)
