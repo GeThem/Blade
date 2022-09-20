@@ -31,7 +31,7 @@ typedef enum Status
 	RUN = 0x1,
 	JUMP = 0x2,
 	FALL = 0x4,
-	HIT = 0x8,
+	DISABLED = 0x8,
 	DEAD = 0x10,
 	PARRY = 0x20,
 	ATTACK = 0x40,
@@ -42,7 +42,19 @@ typedef enum Status
 	PLUNGE = 0x800,
 	PLUNGEATK = 0x1000,
 	PLUNGEPOSTATK = 0x2000,
-	EVADE = 0x4000
+	EVADE = 0x4000,
+	BUSY = 0x8000,
+	ISDISMOUNTING = 0x10000,
+	ISDEALINGDMG = 0x20000,
+	CANMOVE = 0x40000,
+	CANATTACK = 0x80000,
+	CANDEALDMG = 0x100000,
+	CANCHARGE = 0x200000,
+	CANPLUNGE = 0x400000,
+	CANPARRY = 0x800000,
+	CANEVADE = 0x1000000,
+	ISHOLDINGATK = 0x2000000, 
+	ISHOLDINGPARRY = 0x4000000
 } Status;
 
 typedef struct AnimatedSprite
@@ -95,7 +107,7 @@ typedef struct Player
 	float currStamina, stmRecharge = 0.6, currStmRecharge = 0.6;
 	int maxHP, currHP, maxStamina, baseDmg, currDmg;
 	int parryCD, currParrCD, parryDur, currParrDur, disableDur;
-	bool isBusy = false, isDisabled = false, isDismounting = false, isDealingDmg = false;
+	bool isDismounting = false, isDealingDmg = false;
 	bool canMove = true, canAttack = true, canDealDmg = true, canCharge = true, canPlunge = false;
 	bool canParry = true, canEvade = true, isHoldingAtk = false, isHoldingParry = false;
 	Uint8 activeBonuses = 0;

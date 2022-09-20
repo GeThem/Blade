@@ -2,7 +2,7 @@
 
 Uint16 PlayerGetStatus(Player& self)
 {
-	return self.status & ~EVADE;
+	return self.status & ~EVADE & ~BUSY;
 }
 
 void PlayerToggleStatus(Player& self, Status status)
@@ -12,14 +12,14 @@ void PlayerToggleStatus(Player& self, Status status)
 
 void PlayerSetStatus(Player& self, Status status)
 {
-	Uint16 evade = self.status & EVADE;
-	self.status = status | evade;
+	Uint16 eb = self.status & (EVADE | BUSY);
+	self.status = status | eb;
 }
 
 Uint16 GetAnim(Uint16 status)
 {
 	Uint16 index = 0;
-	status &= ~EVADE;
+	status &= ~EVADE & ~BUSY;
 	for (; status; status >>= 1)
 		index++;
 	return index;
@@ -215,7 +215,7 @@ void PlayerReboot(Player& self, Sint8 dir)
 	self.currAtkIndex = 0;
 	self.status = IDLE;
 	self.activeBonuses = 0;
-	self.isBusy = self.isDismounting = false;
+	self.isDismounting = false;
 	self.canAttack = self.canEvade = self.canParry = true;
 	self.ent.currMS = self.ent.verMS = 0;
 	self.ent.isInAir = self.ent.isMoving = false;
@@ -237,13 +237,13 @@ void PlayerNextAttack(Player& self)
 
 void PlayerInput(Player& self)
 {
-	if (self.isDisabled)
-		return;
 	Uint16 status = PlayerGetStatus(self);
-	if (!self.isBusy || status == PLUNGE || self.status & EVADE)
+	if (status == DISABLED)
+		return;
+	if (!(self.status & BUSY) || status == PLUNGE || self.status & EVADE)
 		self.isDismounting = kb.state[self.ctrls.dismount];
 
-	if (!self.isBusy || self.status & EVADE)
+	if (!(self.status & BUSY) || self.status & EVADE)
 	{
 		if (!self.canMove && !KeyHold(self.ctrls.left) && !KeyHold(self.ctrls.right))
 			self.canMove = true;
@@ -272,14 +272,14 @@ void PlayerInput(Player& self)
 			self.canMove = true;
 		}
 	}
-	if (self.isBusy)
+	if (self.status & BUSY)
 	{
 		if (status == ATTACK && !self.isDealingDmg &&
 			(OnKeyPress(self.ctrls.right) || OnKeyPress(self.ctrls.left) || OnKeyPress(self.ctrls.jump)))
 		{
 			PlayerSetStatus(self, IDLE);
 			PlayerResetAttacks(self, self.currAtkIndex + 1);
-			self.isBusy = false;
+			self.status |= BUSY;
 			self.canMove = true;
 			return PlayerInput(self);
 		}
@@ -295,8 +295,10 @@ void PlayerInput(Player& self)
 		}
 		return;
 	}
+	self.status |= BUSY;
 	if (OnKeyPress(self.ctrls.chargeAtk) && self.currStamina > 0)
 	{
+
 		if (!self.ent.isInAir && self.canCharge)
 		{
 			PlayerResetAttacks(self, self.currAtkIndex + 1);
@@ -304,7 +306,7 @@ void PlayerInput(Player& self)
 			self.currAtk = &self.chargeAtk[0].atk;
 			self.ent.currMS = 0;
 			self.isDismounting = false;
-			self.isBusy = self.isHoldingAtk = true;
+			self.isHoldingAtk = true;
 			self.ent.isMoving = self.canCharge = self.canMove = false;
 			PlayerSetStatus(self, CHRG);
 			return;
@@ -314,10 +316,9 @@ void PlayerInput(Player& self)
 			PlayerResetAttacks(self, self.currAtkIndex + 1);
 			PlayerResetChargeAttack(self, 1);
 			self.currAtk = &self.chargeAtk[1].atk;
-			PlayerDecreaseStamina(self, self.currAtk->staminaCost);
 			self.ent.currMS = 0;
+			PlayerDecreaseStamina(self, self.currAtk->staminaCost);
 			self.ent.verMS = -self.ent.vVel;
-			self.isBusy = true;
 			self.ent.isMoving = self.canCharge = self.canMove = false;
 			PlayerSetStatus(self, PLUNGE);
 			return;
@@ -331,14 +332,13 @@ void PlayerInput(Player& self)
 		self.currAtk->sprite.timeElapsed = 0;
 		PlayerNextAttack(self);
 		PlayerDecreaseStamina(self, self.currAtk->staminaCost);
-		self.isBusy = true;
 		self.canAttack = self.ent.isMoving = self.canMove = false;
 		PlayerSetStatus(self, ATTACK);
 		return;
 	}
 	if (kb.state[self.ctrls.parry] && self.canParry && self.currStamina > 0)
 	{
-		self.isBusy = self.isHoldingParry = true;
+		self.isHoldingParry = true;
 		self.canParry = self.canMove = self.ent.isMoving = false;
 		self.currParrDur = self.parryDur;
 		self.ent.currMS = 0;
@@ -347,12 +347,12 @@ void PlayerInput(Player& self)
 	}
 	if (OnKeyPress(self.ctrls.evade) && self.canEvade)
 	{
-		self.isBusy = true;
 		self.canEvade = false;
 		self.currEvadeDur = self.evadeDur;
 		PlayerToggleStatus(self, EVADE);
 		return;
 	}
+	self.status &= ~BUSY;
 }
 
 void PlayerPlatformVerCollision(Player& self, Platform& platform)
@@ -442,7 +442,8 @@ bool PlayerProcessAttack(Player& self, Attack& atk, Uint16 dt)
 		return false;
 	}
 	self.canDealDmg = true;
-	self.isBusy = self.isDealingDmg = false;
+	self.status &= ~BUSY;
+	self.isDealingDmg = false;
 	return true;
 }
 
@@ -461,7 +462,7 @@ bool PlayerProcessChargeAttack(Player& self, Uint16 dt)
 		{
 			PlayerDecreaseStamina(self, self.currAtk->staminaCost);
 			PlayerSetStatus(self, CHRGPOSTATK);
-			self.isBusy = true;
+			self.status |= BUSY;
 		}
 		return false;
 	}
@@ -469,7 +470,7 @@ bool PlayerProcessChargeAttack(Player& self, Uint16 dt)
 	if (self.currAtk->currDur <= 0)
 	{
 		self.canMove = true;
-		self.isBusy = false;
+		self.status &= ~BUSY;
 		return true;
 	}
 	return false;
@@ -501,7 +502,7 @@ bool PlayerProcessPlungeAttack(Player& self, Uint16 dt)
 		if (PlayerProcessAttack(self, atk.atk, dt))
 		{
 			PlayerSetStatus(self, PLUNGEPOSTATK);
-			self.isBusy = true;
+			self.status |= BUSY;
 		}
 		return false;
 	}
@@ -509,7 +510,7 @@ bool PlayerProcessPlungeAttack(Player& self, Uint16 dt)
 	if (self.currAtk->currDur <= 0)
 	{
 		self.canMove = true;
-		self.isBusy = false;
+		self.status &= ~BUSY;
 		return true;
 	}
 	return false;
@@ -524,7 +525,7 @@ void PlayerProcessParry(Player& self, Uint16 dt)
 		if (self.currParrDur > 0)
 			return;
 	}
-	self.isBusy = false;
+	self.status &= ~BUSY;
 	self.canMove = true;
 	PlayerDecreaseStamina(self, 0);
 	PlayerSetStatus(self, IDLE);
@@ -536,7 +537,7 @@ void PlayerProcessEvade(Player& self, Uint16 dt)
 	self.currEvadeDur -= dt;
 	if (self.currEvadeDur > 0)
 		return;
-	self.isBusy = false;
+	self.status &= ~BUSY;
 	PlayerToggleStatus(self, EVADE);
 }
 
@@ -545,7 +546,8 @@ void PlayerAttackPenalty(Player& self, float duration)
 	duration *= 1000.0f;
 	duration = max(self.currAtk->currCD, duration);
 	PlayerResetAttacks(self, self.currAtkIndex + 1);
-	self.canAttack = self.isBusy = self.isDealingDmg = false;
+	self.canAttack = self.isDealingDmg = false;
+	self.status &= ~BUSY;
 	self.atks[0].currCD = duration;
 	self.chargeAtk[0].atk.currCD = duration;
 	self.currAtkIndex = 0;
@@ -566,7 +568,7 @@ void PlayerCancelParry(Player& self)
 {
 	self.status &= ~PARRY;
 	self.canMove = true;
-	self.isBusy = false;
+	self.status &= ~BUSY;
 }
 
 void PlayerParryCooldown(Player& self, Uint16 dt)
@@ -594,10 +596,9 @@ void PlayerEvadeCooldown(Player& self, Uint16 dt)
 void PlayerDisable(Player& self, float dur)
 {
 	dur *= 1000;
-	self.anims[GetAnim(HIT)].timeElapsed = 0;
-	PlayerSetStatus(self, HIT);
-	self.isDisabled = true;
-	self.ent.isMoving = self.isBusy = false;
+	self.anims[GetAnim(DISABLED)].timeElapsed = 0;
+	self.status = DISABLED;
+	self.ent.isMoving = false;
 	self.disableDur = max(dur, self.disableDur);
 }
 
@@ -607,8 +608,7 @@ void PlayerDisableElapse(Player& self, Uint16 dt)
 	if (self.disableDur <= 0)
 	{
 		self.disableDur = 0;
-		self.isDisabled = false;
-		self.status &= ~HIT;
+		self.status &= ~DISABLED;
 		self.canMove = true;
 	}
 }
@@ -654,11 +654,11 @@ void PlayerUpdate(Player& self, Uint16 dt)
 		return;
 	}
 	Uint16 status = PlayerGetStatus(self);
-	if (!self.isBusy)
+	if (!(self.status & BUSY))
 		PlayerStaminaRecharge(self, dt);
-	if (self.isDisabled)
+	if (status == DISABLED)
 		PlayerDisableElapse(self, dt);
-	else if (self.isBusy)
+	else if (self.status & BUSY)
 	{
 		if (status == ATTACK)
 		{
@@ -700,7 +700,7 @@ void PlayerUpdate(Player& self, Uint16 dt)
 	PlayerParryCooldown(self, dt);
 	PlayerEvadeCooldown(self, dt);
 	status = PlayerGetStatus(self);
-	if (!self.isBusy && self.ent.isInAir && status != FALL && status != HIT)
+	if (!(self.status & BUSY) && self.ent.isInAir && status != FALL && status != DISABLED)
 	{
 		PlayerSetStatus(self, self.ent.verMS > 20 ? FALL : JUMP);
 		self.canMove = true;
@@ -744,13 +744,13 @@ VanishText PlayerAttack(Player& self, Player& target, TTF_Font* font, TTF_Font* 
 int PlayerTakeHit(Player& self, int dmg, int stunDur, int dir, int pushPower)
 {
 	PlayerResetAttacks(self, self.currAtkIndex + 1);
-	PlayerSetStatus(self, HIT);
+	self.status = DISABLED;
 	self.ent.dir = -dir;
 	self.ent.currMS = dir * pushPower;
-	self.anims[GetAnim(HIT)].timeElapsed = 0;
-	self.isDisabled = true;
+	self.anims[GetAnim(DISABLED)].timeElapsed = 0;
 	self.disableDur = max(stunDur, self.disableDur);
-	self.ent.isMoving = self.isBusy = false;
+	self.ent.isMoving = false;
+	self.status &= ~BUSY;
 	int takenDmg = dmg;
 	self.currHP -= takenDmg;
 	return takenDmg;

@@ -121,6 +121,11 @@ void MenuLoop(App& app)
 	do
 	{
 		AppFrameStartTime(app);
+
+		DrawFunc(app);
+		BlackStrips();
+		SDL_RenderPresent(ren);
+
 		AppHandleEvents(app);
 		if (app.menu.type != MAPCHOICE && app.menu.type != CHARCHOICE)
 		{
@@ -133,9 +138,6 @@ void MenuLoop(App& app)
 				val = -1;
 			app.loopFlag = val;
 		}
-		DrawFunc(app);
-		BlackStrips();
-		SDL_RenderPresent(ren);
 		AppDelay(app);
 	} while (app.loopFlag == -1);
 	app.MenuLeaveFuncs[min(app.menu.type, 3)](app);
