@@ -112,13 +112,13 @@ void GameHandleArenaCollisions(Game& self)
 {
 	for (Player& player : self.players)
 	{
-		player.canPlunge = true;
+		player.status |= CANPLUNGE;
 		player.dOrder = FOREGROUND;
 		for (int i = 0; i < self.map.platformsCount; i++)
 		{
 			Platform& platform = self.map.platforms[i];
 			if (SDL_HasIntersection(&player.plungeRect, &platform.rect))
-				player.canPlunge = false;
+				player.status &= ~CANPLUNGE;
 			PlayerPlatformVerCollision(player, platform);
 			PlayerPlatformHorCollision(player, platform);
 		}
@@ -127,8 +127,8 @@ void GameHandleArenaCollisions(Game& self)
 
 Sint8 GameUpdate(Game& self, const Uint16& dt)
 {
-	std::cout << self.players[0].currEvadeCD << "  " << self.players[0].currParrCD << "  " << self.players[0].currAtk->currCD <<
-		"  " << self.players[0].currStaminaCD << "  " << self.players[0].currAtk->currDur << "  " << self.players[0].currParrDur << '\n';
+	//std::cout << self.players[0].currEvadeCD << "  " << self.players[0].currParrCD << "  " << self.players[0].currAtk->currCD <<
+	//	"  " << self.players[0].currStaminaCD << "  " << self.players[0].currAtk->currDur << "  " << self.players[0].currParrDur << '\n';
 	static bool returnedToMenu = false;
 	if (OnKeyPress(SDL_SCANCODE_ESCAPE))
 		return TOMENU;
@@ -193,7 +193,7 @@ Sint8 GameUpdate(Game& self, const Uint16& dt)
 	}
 
 	// PLAYER INTERACTIONS
-	if (self.players[0].isDealingDmg && self.players[1].isDealingDmg)
+	if (self.players[0].status & ISDEALINGDMG && self.players[1].status & ISDEALINGDMG)
 	{
 		Player& p1 = self.players[0], & p2 = self.players[1];
 		SDL_Rect inter;
@@ -212,18 +212,18 @@ Sint8 GameUpdate(Game& self, const Uint16& dt)
 	Player* atkPl = NULL, * recPl = NULL;
 	for (int i = 0; i < 2; i++)
 	{
-		if (!self.players[i].isDealingDmg)
+		if (!(self.players[i].status & ISDEALINGDMG))
 			continue;
 		atkPl = &self.players[i];
 		recPl = &self.players[!i];
 		self.drawPriority[1] = atkPl;
 		self.drawPriority[0] = recPl;
-		if (recPl->currHP > 0 &&
-			atkPl->canDealDmg && SDL_HasIntersection(&atkPl->currAtk->hitbox, &recPl->ent.rect))
+		if (recPl->currHP > 0 && atkPl->status & CANDEALDMG 
+			&& SDL_HasIntersection(&atkPl->currAtk->hitbox, &recPl->ent.rect))
 		{
 			if (recPl->status & EVADE)
 			{
-				atkPl->canDealDmg = false;
+				atkPl->status &= ~CANDEALDMG;
 				VanishText txt = PlayerSpawnText(*recPl, "Evade", self.playersInteractionsFont,
 					RandInt(27, 34), { 20, 247, 115 }, self.playersInteractionsFontOutline);
 				ListAppend(self.vanishTexts, txt);
@@ -236,7 +236,7 @@ Sint8 GameUpdate(Game& self, const Uint16& dt)
 				if (successParryDir * recPl->ent.dir >= 0)
 				{
 					VanishText txt;
-					atkPl->canDealDmg = false;
+					atkPl->status &= ~CANDEALDMG;
 					if (recPl->parryDur - recPl->currParrDur <= MIN_PARRY_DUR)
 					{
 						txt = PlayerSpawnText(*recPl, "Parry", self.playersInteractionsFont,

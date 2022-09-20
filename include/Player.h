@@ -33,6 +33,7 @@ typedef enum Status
 	FALL = 0x4,
 	DISABLED = 0x8,
 	DEAD = 0x10,
+	
 	PARRY = 0x20,
 	ATTACK = 0x40,
 	POSTATTACK = 0x80,
@@ -42,8 +43,9 @@ typedef enum Status
 	PLUNGE = 0x800,
 	PLUNGEATK = 0x1000,
 	PLUNGEPOSTATK = 0x2000,
+
 	EVADE = 0x4000,
-	BUSY = 0x8000,
+	ISBUSY = 0x8000,
 	ISDISMOUNTING = 0x10000,
 	ISDEALINGDMG = 0x20000,
 	CANMOVE = 0x40000,
@@ -54,7 +56,9 @@ typedef enum Status
 	CANPARRY = 0x800000,
 	CANEVADE = 0x1000000,
 	ISHOLDINGATK = 0x2000000, 
-	ISHOLDINGPARRY = 0x4000000
+	ISHOLDINGPARRY = 0x4000000,
+
+	ALLFLAGS = 0xFFFFC000
 } Status;
 
 typedef struct AnimatedSprite
@@ -93,6 +97,8 @@ typedef struct ChargeAtk
 
 typedef struct Player
 {
+	Uint32 status;
+	Uint8 activeBonuses;
 	DrawOrder dOrder;
 	Entity ent;
 	Uint8 numberOfAttacks;
@@ -102,24 +108,19 @@ typedef struct Player
 	AnimatedSprite anims[7], * currSprite;
 	ChargeAtk chargeAtk[2];
 	float baseCritRate, currCritRate, baseCritDmg;
-	Uint16 status = IDLE;
-	int currEvadeDur, evadeDur, evadeCD, currEvadeCD, currStaminaCD;
 	float currStamina, stmRecharge = 0.6, currStmRecharge = 0.6;
+	int currEvadeDur, evadeDur, evadeCD, currEvadeCD, currStaminaCD;
 	int maxHP, currHP, maxStamina, baseDmg, currDmg;
 	int parryCD, currParrCD, parryDur, currParrDur, disableDur;
-	bool isDismounting = false, isDealingDmg = false;
-	bool canMove = true, canAttack = true, canDealDmg = true, canCharge = true, canPlunge = false;
-	bool canParry = true, canEvade = true, isHoldingAtk = false, isHoldingParry = false;
-	Uint8 activeBonuses = 0;
 	SDL_Rect plungeRect, hpBar, staminaBar;
 	Controls ctrls;
 	SDL_Color color;
 } Player;
 
-Uint16 PlayerGetStatus(Player&);
+Uint32 PlayerGetStatus(Player&);
 void PlayerToggleStatus(Player&, Status);
 void PlayerSetStatus(Player&, Status);
-Uint16 GetAnim(Uint16 status);
+Uint32 GetAnim(Uint32 status);
 
 void PlayerLoadCharacter(Player&, const char* name);
 void PlayerLoadCharacterSprites(Player&, const char* name);
