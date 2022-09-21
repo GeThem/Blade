@@ -212,10 +212,8 @@ void PlayerReboot(Player& self, Sint8 dir)
 	PlayerResetChargeAttack(self, 1);
 	PlayerResetAttacks(self, self.numberOfAttacks);
 	self.currAtk = self.atks;
-	self.currAtkIndex = 0;
-	self.status = IDLE | CANPARRY | CANATTACK | CANEVADE;
-	self.activeBonuses = 0;
-	self.ent.currMS = self.ent.verMS = 0;
+	self.status = IDLE;
+	self.ent.currMS = self.ent.verMS = self.activeBonuses = self.currAtkIndex = 0;
 	self.ent.isInAir = self.ent.isMoving = false;
 	self.ent.dir = dir;
 }
@@ -240,8 +238,13 @@ void PlayerInput(Player& self)
 		return;
 	if (!(self.status & ISBUSY) || status == PLUNGE || self.status & EVADE)
 	{
-		self.status &= ~ISDISMOUNTING;
-		self.status |= kb.state[self.ctrls.dismount] ? ISDISMOUNTING : 0;
+		if (!(self.status & CANDISMOUNT) && !KeyHold(self.ctrls.dismount))
+			self.status |= CANDISMOUNT;
+		if (self.status & CANDISMOUNT)
+		{
+			self.status &= ~ISDISMOUNTING;
+			self.status |= kb.state[self.ctrls.dismount] ? ISDISMOUNTING : 0;
+		}
 	}
 
 	if (!(self.status & ISBUSY) || self.status & EVADE)
@@ -365,13 +368,13 @@ void PlayerPlatformVerCollision(Player& self, Platform& platform)
 		return;
 	if (self.ent.verMS < 0.0f || !SDL_HasIntersection(&self.ent.rect, &platform.rect))
 		return;
-	if (self.status & ISDISMOUNTING && platform.isDismountable)
-	{
-		self.status &= ~ISDISMOUNTING;
-		return;
-	}
 	if (int(self.ent.pos.y + self.ent.rect.h - self.ent.verMS) > platform.rect.y)
 		return;
+	if (self.status & ISDISMOUNTING && platform.isDismountable)
+	{
+		self.status &= ~ISDISMOUNTING & ~CANDISMOUNT;
+		return;
+	}
 	if (platform.isDismountable)
 		self.dOrder = PLATFORMS;
 	self.ent.isInAir = false;
@@ -606,12 +609,11 @@ void PlayerDisable(Player& self, float dur)
 void PlayerDisableElapse(Player& self, Uint16 dt)
 {
 	self.disableDur -= dt;
-	if (self.disableDur <= 0)
-	{
-		self.disableDur = 0;
-		self.status &= ~DISABLED;
-		self.status |= CANMOVE;
-	}
+	if (self.disableDur > 0)
+		return;
+	self.disableDur = 0;
+	self.status &= ~DISABLED;
+	self.status |= CANMOVE;
 }
 
 void PlayerDecreaseStamina(Player& self, float amount)
@@ -722,25 +724,27 @@ VanishText PlayerAttack(Player& self, Player& target, TTF_Font* font, TTF_Font* 
 {
 	self.status &= ~CANDEALDMG;
 	bool isCrit = RandFloat(1, 100) <= self.currCritRate;
-	if (!isCrit)
-		self.currCritRate += 2.5;
-	else
-		self.currCritRate = self.baseCritRate;
-	int dmg = int(self.currAtk->dmg * self.currDmg) * (1 + self.baseCritDmg * isCrit);
+	self.currCritRate = isCrit ? self.currCritRate + 2.5 : self.baseCritRate;
 	Sint8 dir;
 	if (self.currAtk->dir == BOTH)
 		dir = RectGetHorMid(self.ent.rect) < EntityGetHorMid(target.ent) ? 1 : -1;
 	else
 		dir = self.currAtk->dir * self.ent.dir;
-	float chrgTime = PlayerGetStatus(self) == ATTACK ? 1 :
-		PlayerGetStatus(self) == CHRGATK ? 1 + (self.chargeAtk[0].chargeTime - MIN_CHARGE_TIME) / 1000.0f :
-		1 + (self.chargeAtk[1].chargeTime - self.chargeAtk[1].preChrgTime) / 1000.0f;
-	dmg *= min(2, chrgTime);
-	int takenDmg = PlayerTakeHit(target, dmg,
-		self.currAtk->stunDur + self.chargeAtk[1].preChrgTime * bool(PlayerGetStatus(self) == PLUNGE),
-		dir, self.baseDmg * 0.054);
+	Uint32 status = PlayerGetStatus(self);
+	float chrgTime = 1, stunDur = self.currAtk->stunDur;
+	if (status == CHRGATK)
+	{
+		chrgTime += min(2, (self.chargeAtk[0].chargeTime - MIN_CHARGE_TIME) / 1000.0f);
+		stunDur += chrgTime / 2.0f;
+	}
+	else if (status == PLUNGEATK)
+	{
+		chrgTime += (self.chargeAtk[1].chargeTime - self.chargeAtk[1].preChrgTime) / 1000.0f;
+		stunDur += chrgTime * 3;
+	}
+	int dmg = int(self.currAtk->dmg * self.currDmg) * (1 + self.baseCritDmg * isCrit) * chrgTime;
 	char buffer[10];
-	sprintf_s(buffer, "%i", dmg);
+	sprintf_s(buffer, "%i", PlayerTakeHit(target, dmg, stunDur, dir, self.baseDmg * 0.054));
 	return PlayerSpawnText(target, buffer, font, RandInt(21, 25) + 10 * isCrit, { 230, 230, 230 }, outline);
 }
 

@@ -5,9 +5,8 @@
 #include <time.h>
 
 #include "SDL_default.h"
-#include "Platform.h"
 #include "Player.h"
-#include "Platform.h"
+#include "Map.h"
 #include "vfx.h"
 #include "List.h"
 #include "Bonuses.h"

@@ -22,7 +22,7 @@ typedef enum DrawOrder
 typedef struct Controls
 {
 	SDL_Scancode left, right, jump, dismount, evade;
-	SDL_Scancode attack, chargeAtk, thrw, parry;
+	SDL_Scancode attack, chargeAtk, parry;
 } Controls;
 
 typedef enum Status
@@ -57,6 +57,7 @@ typedef enum Status
 	CANEVADE = 0x1000000,
 	ISHOLDINGATK = 0x2000000, 
 	ISHOLDINGPARRY = 0x4000000,
+	CANDISMOUNT = 0x8000000,
 
 	ALLFLAGS = 0xFFFFC000
 } Status;
