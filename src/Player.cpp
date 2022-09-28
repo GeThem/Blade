@@ -1,6 +1,6 @@
 #include "Player.h"
 
-Uint32 PlayerGetStatus(Player& self)
+Uint32 PlayerGetStatus(const Player& self)
 {
 	return self.status & ~ALLFLAGS;
 }
@@ -714,7 +714,7 @@ void PlayerUpdate(Player& self, Uint16 dt)
 
 VanishText PlayerSpawnText(Player& self, const char* text, TTF_Font* font, int size, const SDL_Color& color, TTF_Font* outline)
 {
-	VanishText txt = VanishTextGenerate(text, font, size, color, 0.25, 0.09, 0.6, outline);
+	VanishText txt = VanishTextGenerate(text, font, size, color, 0.25, 0.09, 0.6, outline, RandInt(0, 1));
 	VanishTextSetPos(txt, { EntityGetHorMid(self.ent) + RandInt(-self.ent.rect.w * 0.8, self.ent.rect.w * 0.8),
 		EntityGetVerMid(self.ent) - 20 + RandInt(-40, 20) });
 	return txt;
@@ -776,7 +776,7 @@ void PlayerDraw(const Player& self)
 	SDL_SetTextureAlphaMod(self.currSprite->image.texture, self.status & EVADE ? 100 : 255);
 	SDL_RenderCopyEx(ren, self.currSprite->image.texture, &self.currSprite->currFrame, &drawRect,
 		0, NULL, self.currSprite->flip);
-	//if (self.isDealingDmg)
+	//if (self.status & ISDEALINGDMG)
 	//{
 	//	SDL_SetRenderDrawColor(ren, 0, 150, 0, 255);
 	//	drawRect = RectTransformForCurrWin(self.currAtk->hitbox);

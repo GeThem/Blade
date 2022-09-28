@@ -2,11 +2,13 @@
 
 VanishText VanishTextGenerate(
 	const char* text, TTF_Font* font, int size, const SDL_Color& color,
-	float appearTime, float vanishTime, float existTime, TTF_Font* outline
+	float appearTime, float vanishTime, float existTime, TTF_Font* outline,
+	bool isMoving
 )
 {
 	VanishText self;
-	self.alpha = 1;
+	self.isMoving = isMoving;
+	self.alpha = appearTime != 0 ? 1 : 255;
 	if (font == NULL)
 	{
 		font = TTF_OpenFont("data/fonts/PressStart2P-Regular.ttf", size);

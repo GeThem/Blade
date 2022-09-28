@@ -8,6 +8,7 @@
 #include "Player.h"
 #include "Map.h"
 #include "vfx.h"
+#include "utils.h"
 #include "List.h"
 #include "Bonuses.h"
 
@@ -15,14 +16,16 @@
 
 typedef struct Game
 {
-	int roundTime = 3000, currTime, lastRenderedTime;
+	int roundTime = 90000, currTime, lastRenderedTime;
+	int roundRestartCountdown = 3000, currRCountdown;
+	bool restartingRound = false;
 	Image timer;
 	Player* drawPriority[2];
 	Player players[2];
+	int playersWins[2];
 	Map map;
 	VList vanishTexts;
-	TTF_Font* playersInteractionsFont, * playersInteractionsFontOutline;
-	Bonus ddbonuses[2];
+	TTF_Font* font, * fontOutline;
 } Game;
 
 VanishText GameSpawnText(const SDL_FPoint& pos, const char* text, TTF_Font* font, int size,
@@ -34,7 +37,7 @@ void GameLoadControls(Game&);
 
 void GameInit(Game&, const char* p1, const char* p2, const char* map);
 
-void GameRestart(Game&);
+void GameRestart(Game&, bool clearScores = true);
 
 void GameHandleArenaCollisions(Game&);
 

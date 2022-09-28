@@ -118,7 +118,7 @@ typedef struct Player
 	SDL_Color color;
 } Player;
 
-Uint32 PlayerGetStatus(Player&);
+Uint32 PlayerGetStatus(const Player&);
 void PlayerToggleStatus(Player&, Status);
 void PlayerSetStatus(Player&, Status);
 Uint32 GetAnim(Uint32 status);

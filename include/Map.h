@@ -12,7 +12,7 @@ typedef struct Map
 	int platformsCount, bonusesCount;
 	Platform* platforms;
 	Bonus* bonuses;
-};
+} Map;
 
 void MapLoad(Map&, const char* name);
 

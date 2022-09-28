@@ -13,7 +13,7 @@ typedef struct VanishText
 	int finalSize, currentSize;
 	float alpha;
 	Image txtImg;
-	bool isMoving = RandInt(0, 1);
+	bool isMoving;
 
 	float ratio;
 } VanishText;
@@ -30,8 +30,8 @@ typedef struct VList
 } VList;
 
 VanishText VanishTextGenerate(
-	const char* text, TTF_Font* font, int size, const SDL_Color&,
-	float appearTime, float vanishTime, float existTime, TTF_Font* outline=NULL
+	const char* text, TTF_Font* font, int size, const SDL_Color&, float appearTime,
+	float vanishTime, float existTime, TTF_Font* outline = NULL, bool isMoving = false
 );
 
 void VanishTextUpdate(VanishText&, const Uint16& dt);

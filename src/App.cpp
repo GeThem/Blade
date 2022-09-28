@@ -172,8 +172,8 @@ void CharChoiceInit(App& self, int charIndex)
 {
 	SDL_Color cbStates[2] = { {100, 100, 100, 255}, {20 + 150 * !charIndex, 20, 20 + 150 * charIndex, 255} };
 	ChoiceButton buttons[2] = {
-		ChoiceButtonInit({ realW / 2 - 885, realH / 2 - 295, 870, 510 }, ImageLoad("data/characters/Fantasy Warrior/preview.png"), cbStates, (int)CHAR1),
-		ChoiceButtonInit({ realW / 2 + 15, realH / 2 - 295, 870, 510 }, ImageLoad("data/characters/Medieval Warrior/preview.png"), cbStates, (int)CHAR2)
+		ChoiceButtonInit({ realW / 3 - 255, realH / 2 - 295, 510, 510 }, ImageLoad("data/characters/Fantasy Warrior/preview.png"), cbStates, (int)CHAR1),
+		ChoiceButtonInit({ realW * 2 / 3 - 255, realH / 2 - 295, 510, 510 }, ImageLoad("data/characters/Medieval Warrior/preview.png"), cbStates, (int)CHAR2)
 	};
 	char buffer[29];
 	sprintf_s(buffer, "Player %i", charIndex + 1);

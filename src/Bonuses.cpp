@@ -1,16 +1,31 @@
 #include "Bonuses.h"
 
-void DoubleDamageInit(Bonus& self, const SDL_Point& pos, float dur, float cd)
+Image bonusesImages[1];
+
+int GetBonusImageIndex(Uint32 type)
+{
+	int index = -1;
+	for (; type; type >>= 1)
+		index++;
+	return index;
+}
+
+void BonusesInit()
+{
+	bonusesImages[0] = ImageLoad("data/bonuses/double damage.png");
+}
+
+void DoubleDamageInit(Bonus& self, const SDL_Point& pos)
 {
 	self.type = DOUBLE_DAMAGE;
 	self.ApplyFunc = DoubleDamageApply;
 	self.UpdateFunc = DoubleDamageUpdate;
 	self.DrawFunc = DoubleDamageDraw;
 
-	self.img = ImageLoad("data/bonuses/double damage.png");
+	self.img = bonusesImages[GetBonusImageIndex(self.type)];
 	RectSetPos(self.img.rect, pos.x, pos.y);
-	self.currDur = self.maxDur = dur * 1000.0f;
-	self.maxCD = cd * 1000.0f;
+	self.currDur = self.maxDur = 10000;
+	self.maxCD = 5000;
 	self.currCD = 0;
 	self.player = NULL;
 	self.isAvailable = true;
@@ -54,7 +69,8 @@ void DoubleDamageDraw(Bonus& self)
 	}
 }
 
-void BonusDeinit(Bonus& self)
+void BonusesDeinit()
 {
-	ImageDestroy(self.img);
+	for (Image& img : bonusesImages)
+		ImageDestroy(img);
 }

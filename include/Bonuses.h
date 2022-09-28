@@ -2,12 +2,14 @@
 #include "SDL_default.h"
 #include "Player.h"
 
-#define BONUS_TYPES 2
+#define BONUS_TYPES 1
+
+extern Image bonusesImages[1];
 
 typedef enum BonusType
 {
 	DOUBLE_DAMAGE=0x1,
-	HASTE=0x2
+	//HASTE=0x2
 };
 
 typedef struct Bonus
@@ -23,14 +25,18 @@ typedef struct Bonus
 	void(*DrawFunc)(Bonus&);
 } Bonus;
 
-void DoubleDamageInit(Bonus&, const SDL_Point&, float dur, float cd);
+int GetBonusImageIndex(Uint32 type);
+
+void BonusesInit();
+
+void DoubleDamageInit(Bonus&, const SDL_Point&);
 void DoubleDamageApply(Bonus&, Player&);
 void DoubleDamageUpdate(Bonus&, Uint16 dt);
 void DoubleDamageDraw(Bonus&);
 
-void HasteInit(Bonus&, const SDL_Point&, float dur, float cd);
-void HasteApply(Bonus&, Player&);
-void HasteUpdate(Bonus&, Uint16 dt);
-void HasteDraw(Bonus&);
+//void HasteInit(Bonus&, const SDL_Point&);
+//void HasteApply(Bonus&, Player&);
+//void HasteUpdate(Bonus&, Uint16 dt);
+//void HasteDraw(Bonus&);
 
-void BonusDeinit(Bonus&);
+void BonusesDeinit();
