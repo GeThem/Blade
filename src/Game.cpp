@@ -140,13 +140,12 @@ int GameRoundEndCheck(Game& self)
 			return 1;
 		return 0;
 	}
-	if (self.players[0].currHP <= 0 && self.players[1].currAtk <= 0)
+	if (self.players[0].currHP <= 0 && self.players[1].currHP <= 0)
 		return 0;
 	for (int i = 0; i < 2; i++)
 	{
-		if (self.players[i].currHP > 0)
-			continue;
-		return !i + 1;
+		if (self.players[i].currHP <= 0)
+			return !i + 1;
 	}
 	return -1;
 }

@@ -8,14 +8,10 @@
 typedef struct VanishText
 {
 	SDL_FPoint pos;
-	float appearRate, vanishRate, sizeDecreaseRate;
-	int existTime;
-	int finalSize, currentSize;
-	float alpha;
 	Image txtImg;
+	float appearRate, vanishRate, sizeDecreaseRate, alpha, ratio;
+	int existTime, finalSize, currentSize;
 	bool isMoving;
-
-	float ratio;
 } VanishText;
 
 typedef struct VLElem

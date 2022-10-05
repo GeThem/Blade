@@ -35,12 +35,6 @@ void AppInit(App& self)
 	MainMenuInit(self.menu);
 }
 
-void AppRestartTime(App& self)
-{
-	self.currTime = self.lastRenderedTime = 0;
-	self.lastTime = SDL_GetTicks();
-}
-
 void AppFrameStartTime(App& self)
 {
 	Uint32 currTime = SDL_GetTicks();
@@ -84,7 +78,6 @@ void GameLoop(App& app)
 	if (app.restartGame)
 	{
 		GameRestart(app.game);
-		AppRestartTime(app);
 	}
 	do
 	{

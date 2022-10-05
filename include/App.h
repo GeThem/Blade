@@ -30,7 +30,6 @@ typedef struct App
 void AppChangeResolution(App&, const SDL_Point& resolution);
 void AppInit(App&);
 
-void AppRestartTime(App&);
 void AppFrameStartTime(App&);
 void AppDelay(App&);
 
