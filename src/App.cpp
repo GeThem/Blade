@@ -16,6 +16,7 @@ void AppInit(App& self)
 	self.MenuLeaveFuncs[1] = SettingsMenuLeave;
 	self.MenuLeaveFuncs[2] = InGameMenuLeave;
 	self.MenuLeaveFuncs[3] = ChoiceMenuLeave;
+	self.MenuLeaveFuncs[4] = AboutMenuLeave;
 	srand(time(0));
 	Init();
 	SDL_GetDesktopDisplayMode(0, &self.display);
@@ -133,7 +134,9 @@ void MenuLoop(App& app)
 		}
 		AppDelay(app);
 	} while (app.loopFlag == -1);
-	app.MenuLeaveFuncs[min(app.menu.type, 3)](app);
+	if (app.menu.type > MAPCHOICE)
+		app.menu.type--;
+	app.MenuLeaveFuncs[app.menu.type](app);
 }
 
 bool AppRun(App& self)
@@ -244,7 +247,20 @@ void MainMenuLeave(App& self)
 		self.loopFlag = MENU;
 		return;
 	}
+	if (self.loopFlag == MM_ABOUT)
+	{
+		AboutMenuInit(self.menu);
+		self.loopFlag = MENU;
+		return;
+	}
 	self.loopFlag = QUIT;
+}
+
+void AboutMenuLeave(App& app)
+{
+	MenuClear(app.menu);
+	MainMenuInit(app.menu);
+	app.loopFlag = MENU;
 }
 
 void SettingsMenuLeave(App& app)

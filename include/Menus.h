@@ -12,6 +12,7 @@ typedef enum MButtons
 	MM_PLAY = 0,
 	MM_SETTINGS = 1,
 	MM_EXIT = 2,
+	MM_ABOUT = 3,
 	IG_RESUME = 0,
 	IG_RESTART = 1,
 	IG_BACKTOMENU = 2,
@@ -22,7 +23,8 @@ typedef enum MButtons
 	MAP1 = 0,
 	MAP2 = 1,
 	CHAR1 = 0,
-	CHAR2 = 1
+	CHAR2 = 1,
+	AM_BACK = 0
 } MButtons;
 
 typedef enum MenuType
@@ -32,6 +34,7 @@ typedef enum MenuType
 	INGAMEMENU = 2,
 	MAPCHOICE = 3,
 	CHARCHOICE = 4,
+	ABOUTMENU = 5
 } MenuType;
 
 typedef struct Menu
@@ -46,7 +49,7 @@ typedef struct Menu
 	SDL_Color background;
 	Sint8(*UpdateFunc)(Menu&) = NULL;
 	void(*DrawFunc)(const Menu&) = NULL;
-	MenuType type;
+	Uint8 type;
 } Menu;
 
 Sint8 MenuUpdate(Menu&);
@@ -63,5 +66,9 @@ void InGameMenuInit(Menu&);
 void ChoiceMenuInit(Menu&, const char* text, int choiceButtonsCount, ChoiceButton*, MenuType type);
 Sint8 ChoiceMenuUpdate(Menu&);
 void ChoiceMenuDraw(const Menu&);
+
+void AboutMenuInit(Menu&);
+Sint8 AboutMenuUpdate(Menu&);
+void AboutMenuDraw(const Menu&);
 
 void MenuClear(Menu&);

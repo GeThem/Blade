@@ -11,11 +11,12 @@ void MainMenuInit(Menu& self)
 
 	TTF_Font* font = TTF_OpenFont("data/fonts/slkscr.ttf", 80);
 	SDL_Color states[3]{ {100, 100, 100, 255}, {196, 22, 22, 255}, {22, 196, 22, 255} };
-	self.textButtonsCount = 3;
+	self.textButtonsCount = 4;
 	self.textButtons = (TextButton*)malloc(sizeof(TextButton) * self.textButtonsCount);
-	self.textButtons[MM_PLAY] = TextButtonInit({ realW / 2 - 350, realH / 2 - 170, 700, 100 }, "PLAY", font, states);
-	self.textButtons[MM_SETTINGS] = TextButtonInit({ realW / 2 - 350, realH / 2 - 50, 700, 100 }, "SETTINGS", font, states);
-	self.textButtons[MM_EXIT] = TextButtonInit({ realW / 2 - 350, realH / 2 + 70, 700, 100 }, "EXIT", font, states);
+	self.textButtons[MM_PLAY] = TextButtonInit({ realW / 2 - 350, realH / 2 - 230, 700, 100 }, "PLAY", font, states);
+	self.textButtons[MM_SETTINGS] = TextButtonInit({ realW / 2 - 350, realH / 2 - 110, 700, 100 }, "SETTINGS", font, states);
+	self.textButtons[MM_ABOUT] = TextButtonInit({ realW / 2 - 350, realH / 2 + 10, 700, 100 }, "ABOUT", font, states);
+	self.textButtons[MM_EXIT] = TextButtonInit({ realW / 2 - 350, realH / 2 + 130, 700, 100 }, "EXIT", font, states);
 	TTF_CloseFont(font);
 }
 
@@ -208,6 +209,59 @@ void ChoiceMenuDraw(const Menu& self)
 		TextButtonDraw(self.textButtons[i]);
 	for (int i = 0; i < self.choiceButtonsCount; i++)
 		ChoiceButtonDraw(self.choiceButtons[i]);
+}
+
+void AboutMenuInit(Menu& self)
+{
+	self.type = ABOUTMENU;
+	self.UpdateFunc = AboutMenuUpdate;
+	self.DrawFunc = AboutMenuDraw;
+
+	self.background = { 60, 60, 60, 255 };
+	self.escReturn = AM_BACK;
+
+	TTF_Font* font = TTF_OpenFont("data/fonts/slkscr.ttf", 70);
+	SDL_Color states[3]{ {100, 100, 100, 255}, {196, 22, 22, 255}, {22, 196, 22, 255} };
+	self.textButtonsCount = 1;
+	self.textButtons = (TextButton*)malloc(sizeof(TextButton) * self.textButtonsCount);
+	self.textButtons[AM_BACK] = TextButtonInit({ realW / 2 - 250, realH / 2 + 350, 500, 100 }, "BACK", font, states);
+
+	TTF_SetFontSize(font, 90);
+	self.textsCount = 2;
+	self.texts = (Image*)malloc(sizeof(Image) * self.textsCount);
+	self.texts[0].texture = self.texts[1].texture = NULL;
+	char text[40] = "The game is developed by a student";
+	RenderText(self.texts[0], font, text, { 200, 200, 200, 255 });
+	RectSetPos(self.texts[0].rect, (realW - self.texts[0].rect.w) / 2, 50);
+	strcpy_s(text, "as a programming course project");
+	RenderText(self.texts[1], font, text, { 200, 200, 200, 255 });
+	RectSetPos(self.texts[1].rect, (realW - self.texts[0].rect.w) / 2, 50 + self.texts[1].rect.h + 10);
+	TTF_CloseFont(font);
+}
+
+Sint8 AboutMenuUpdate(Menu& self)
+{
+	if (OnKeyPress(SDL_SCANCODE_ESCAPE))
+		return self.escReturn;
+	for (Uint8 i = 0; i < self.textButtonsCount; i++)
+	{
+		if (TextButtonUpdate(self.textButtons[i]))
+			return i;
+	}
+	return -1;
+}
+
+void AboutMenuDraw(const Menu& self)
+{
+	const SDL_Color& bg = self.background;
+	ScreenFill(bg.r, bg.g, bg.b, bg.a);
+	for (int i = 0; i < self.textsCount; i++)
+	{
+		SDL_Rect drawRect = RectTransformForCurrWin(self.texts[i].rect);
+		SDL_RenderCopy(ren, self.texts[i].texture, NULL, &drawRect);
+	}
+	for (int i = 0; i < self.textButtonsCount; i++)
+		TextButtonDraw(self.textButtons[i]);
 }
 
 void MenuClear(Menu& self)
