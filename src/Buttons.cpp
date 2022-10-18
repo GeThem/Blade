@@ -24,6 +24,7 @@ bool TextButtonUpdate(TextButton& self)
 		self.currState = self.butStates + (mouse.buttons & SDL_BUTTON_LMASK ? PRESSED : ACTIVE);
 		return false;
 	}
+	self.currState = self.butStates;
 	return true;
 }
 

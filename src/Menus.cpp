@@ -34,8 +34,11 @@ void InGameMenuInit(Menu& self)
 	self.textButtonsCount = 3;
 	self.textButtons = (TextButton*)malloc(sizeof(TextButton) * self.textButtonsCount);
 	self.textButtons[IG_RESUME] = TextButtonInit({ realW / 2 - 350, realH / 2 - 170, 700, 100 }, "RESUME", font, states);
+	self.textButtons[IG_RESUME].currState = self.textButtons[IG_RESUME].butStates;
 	self.textButtons[IG_RESTART] = TextButtonInit({ realW / 2 - 350, realH / 2 - 50, 700, 100 }, "RESTART", font, states);
+	self.textButtons[IG_RESTART].currState = self.textButtons[IG_RESTART].butStates;
 	self.textButtons[IG_BACKTOMENU] = TextButtonInit({ realW / 2 - 350, realH / 2 + 70, 700, 100 }, "BACK TO MENU", font, states);
+	self.textButtons[IG_BACKTOMENU].currState = self.textButtons[IG_BACKTOMENU].butStates;
 	TTF_CloseFont(font);
 }
 
@@ -147,7 +150,9 @@ void ChoiceMenuInit(Menu& self, const char* text, int choiceButtonsCount, Choice
 	self.textButtonsCount = 2;
 	self.textButtons = (TextButton*)malloc(sizeof(TextButton) * self.textButtonsCount);
 	self.textButtons[MC_APPLY] = TextButtonInit({ realW / 2 - 600, realH / 2 + 350, 500, 100 }, "CONFIRM", font, states);
+	self.textButtons[MC_APPLY].currState = self.textButtons[MC_APPLY].butStates;
 	self.textButtons[MC_BACK] = TextButtonInit({ realW / 2 + 100, realH / 2 + 350, 500, 100 }, "BACK", font, states);
+	self.textButtons[MC_BACK].currState = self.textButtons[MC_BACK].butStates;
 	
 	TTF_SetFontSize(font, 90);
 	self.textsCount = 1;
@@ -284,7 +289,7 @@ void MenuClear(Menu& self)
 		for (int i = 0; i < self.choiceButtonsCount; i++)
 			ChoiceButtonDestroy(self.choiceButtons[i]);
 		free(self.choiceButtons);
-		self.choiceButtons = NULL;
+		self.choiceButtons = self.activeChoiceButton = NULL;
 		self.choiceButtonsCount = 0;
 	}
 	if (self.texts)

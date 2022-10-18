@@ -1,7 +1,7 @@
 sprite offset=226 172
 hitbox=50 140
 parry=2.5 4
-base dmg=1230
+base dmg=123
 evade=0.25 4
 weight=1.7
 ms=10
