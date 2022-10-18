@@ -28,7 +28,10 @@ VanishText VanishTextGenerate(
 	self.appearRate = 51.5f;
 	self.vanishRate = 255.0f / (vanishTime * FPS);
 	self.sizeDecreaseRate = ceilf((self.currentSize - self.finalSize) / float(appearTime * FPS));
-	self.existTime = existTime * 1000;
+	if (existTime == -1)
+		self.existTime = INT_MAX;
+	else
+		self.existTime = existTime * 1000;
 
 	SDL_SetTextureAlphaMod(self.txtImg.texture, self.alpha);
 	self.ratio = self.txtImg.rect.w / (float)self.txtImg.rect.h;

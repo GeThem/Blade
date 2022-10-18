@@ -201,7 +201,7 @@ void PlayerReboot(Player& self, Sint8 dir)
 	self.dOrder = FOREGROUND;
 	self.currHP = self.maxHP;
 	self.currStamina = self.maxStamina;
-	self.currStaminaCD = self.currEvadeCD = self.currParrCD = 0;
+	self.currStaminaCD = self.currEvadeCD = self.currParrCD = self.disableDur = 0;
 	self.currEvadeDur = self.evadeDur;
 	self.currParrDur = self.parryDur;
 	for (int i = 0; i < 7; i++)
@@ -234,7 +234,7 @@ void PlayerNextAttack(Player& self)
 void PlayerInput(Player& self)
 {
 	Uint32 status = PlayerGetStatus(self);
-	if (status == DISABLED)
+	if (status & (DISABLED | DEAD))
 		return;
 	if (!(self.status & ISBUSY) || status == PLUNGE || self.status & EVADE)
 	{
@@ -705,7 +705,7 @@ void PlayerUpdate(Player& self, Uint16 dt)
 	PlayerParryCooldown(self, dt);
 	PlayerEvadeCooldown(self, dt);
 	status = PlayerGetStatus(self);
-	if (!(self.status & ISBUSY) && self.ent.isInAir && status != FALL && status != DISABLED)
+	if (!(self.status & ISBUSY) && self.ent.isInAir && !(status & (FALL | DISABLED)))
 	{
 		PlayerSetStatus(self, self.ent.verMS > 20 ? FALL : JUMP);
 		self.status |= CANMOVE;
@@ -782,12 +782,10 @@ void PlayerDraw(const Player& self)
 	//	drawRect = RectTransformForCurrWin(self.currAtk->hitbox);
 	//	SDL_RenderFillRect(ren, &drawRect);
 	//}
-	SDL_SetRenderDrawColor(ren, 20, 20, 20, 255);
-	drawRect = RectTransformForCurrWin({ RectGetHorMid(self.ent.rect) - 9, self.ent.rect.y - 32, 18, 18 });
-	SDL_RenderFillRect(ren, &drawRect);
-	SDL_SetRenderDrawColor(ren, self.color.r, self.color.g, self.color.b, 255);
-	drawRect = RectTransformForCurrWin({ RectGetHorMid(self.ent.rect) - 7, self.ent.rect.y - 30, 14, 14 });
-	SDL_RenderFillRect(ren, &drawRect);
+	drawRect = self.marker.rect;
+	RectSetPos(drawRect, RectGetHorMid(self.ent.rect) - 9, self.ent.rect.y - 32);
+	drawRect = RectTransformForCurrWin(drawRect);
+	SDL_RenderCopy(ren, self.marker.texture, NULL, &drawRect);
 }
 
 void PlayerAnimate(Player& self, Uint16 dt)

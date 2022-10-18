@@ -7,22 +7,29 @@ void MapLoad(Map& self, const char* name)
 	strcat_s(temp, name);
 	strcat_s(temp, "/bg.png");
 	self.bg = ImageLoad(temp);
-	self.bg.rect.x = self.bg.rect.y = 0;
 	StrReplace(temp, "bg", "fg");
 	self.fg = ImageLoad(temp);
-	self.fg.rect.x = self.fg.rect.y = 0;
 	StrReplace(temp, "fg", "platforms");
 	self.platformsLayer = ImageLoad(temp);
-	self.platformsLayer.rect.x = self.platformsLayer.rect.y = 0;
 	StrReplace(temp, "platforms.png", "objects.txt");
 	FILE* file;
 	if (fopen_s(&file, temp, "r"))
 		exit(0);
 
 	fgets(temp, tempSize, file);
+	char* val = temp;
+	float x = atoi(StrSplitInTwo(val, ' '));
+	float y = atoi(val);
+	self.p1Pos = { x, y };	
+	fgets(temp, tempSize, file);
+	val = temp;
+	x = atoi(StrSplitInTwo(val, ' '));
+	y = atoi(val);
+	self.p2Pos = { x, y };
+
+	fgets(temp, tempSize, file);
 	self.platformsCount = atoi(temp);
 	self.platforms = (Platform*)malloc(self.platformsCount * sizeof(Platform));
-	char* val;
 	for (int i = 0; i < self.platformsCount; i++)
 	{
 		fgets(temp, tempSize, file);

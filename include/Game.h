@@ -16,7 +16,8 @@
 
 typedef struct Game
 {
-	int roundTime = 90000, currTime, lastRenderedTime;
+	int roundTime = 90'000, currTime, lastRenderedTime;
+	int roundsToWin = 3;
 	int roundRestartCountdown = 3000, currRCountdown;
 	bool restartingRound = false;
 	Image timer;

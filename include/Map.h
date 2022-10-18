@@ -6,6 +6,7 @@
 
 typedef struct Map
 {
+	SDL_FPoint p1Pos, p2Pos;
 	Image bg;
 	Image platformsLayer;
 	Image fg;

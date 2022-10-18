@@ -225,17 +225,14 @@ void AboutMenuInit(Menu& self)
 	self.textButtonsCount = 1;
 	self.textButtons = (TextButton*)malloc(sizeof(TextButton) * self.textButtonsCount);
 	self.textButtons[AM_BACK] = TextButtonInit({ realW / 2 - 250, realH / 2 + 350, 500, 100 }, "BACK", font, states);
-
-	TTF_SetFontSize(font, 90);
-	self.textsCount = 2;
+	TTF_SetFontSize(font, 80);
+	self.textsCount = 1;
 	self.texts = (Image*)malloc(sizeof(Image) * self.textsCount);
-	self.texts[0].texture = self.texts[1].texture = NULL;
-	char text[40] = "The game is developed by a student";
-	RenderText(self.texts[0], font, text, { 200, 200, 200, 255 });
-	RectSetPos(self.texts[0].rect, (realW - self.texts[0].rect.w) / 2, 50);
-	strcpy_s(text, "as a programming course project");
-	RenderText(self.texts[1], font, text, { 200, 200, 200, 255 });
-	RectSetPos(self.texts[1].rect, (realW - self.texts[0].rect.w) / 2, 50 + self.texts[1].rect.h + 10);
+	char text[] = "Hi, nothing here";
+	SDL_Surface* surf = TTF_RenderUTF8_Solid_Wrapped(font, text, { 200, 200, 200, 255 }, realW - 400);
+	self.texts[0].rect = { (realW - surf->w) / 2, (realH - surf->h) / 2 - 190, surf->w, surf->h };
+	self.texts[0].texture = SDL_CreateTextureFromSurface(ren, surf);
+	SDL_FreeSurface(surf);
 	TTF_CloseFont(font);
 }
 

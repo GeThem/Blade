@@ -13,6 +13,7 @@ int GetBonusImageIndex(Uint32 type)
 void BonusesInit()
 {
 	bonusesImages[0] = ImageLoad("data/bonuses/double damage.png");
+	SDL_SetTextureScaleMode(bonusesImages[0].texture, SDL_ScaleModeBest);
 }
 
 void DoubleDamageInit(Bonus& self, const SDL_Point& pos)

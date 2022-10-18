@@ -115,7 +115,7 @@ typedef struct Player
 	int parryCD, currParrCD, parryDur, currParrDur, disableDur;
 	SDL_Rect plungeRect, hpBar, staminaBar;
 	Controls ctrls;
-	SDL_Color color;
+	Image marker;
 } Player;
 
 Uint32 PlayerGetStatus(const Player&);

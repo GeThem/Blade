@@ -24,7 +24,7 @@ typedef struct App
 	char characters[2][20]{ "Fantasy Warrior", "Medieval Warrior" };
 	char maps[2][10]{ "map1", "map2" };
 	int map = NONE, p1Char = NONE, p2Char = NONE;
-	void (*MenuLeaveFuncs[5])(App&);
+	void (*MenuLeaveFuncs[6])(App&);
 } App;
 
 void AppChangeResolution(App&, const SDL_Point& resolution);

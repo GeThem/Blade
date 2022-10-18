@@ -34,8 +34,9 @@ void GameInit(Game& self, const char* p1, const char* p2, const char* map)
 	self.currTime = self.roundTime;
 	self.lastRenderedTime = self.roundTime / 1000;
 	GameRenderTime(self);
-	RectSetPos(self.timer.rect, (realW - self.timer.rect.w) / 2, 10);
+	RectSetPos(self.timer.rect, 4 + (realW - self.timer.rect.w) / 2, 10);
 
+	MapLoad(self.map, map);
 	GameLoadControls(self);
 	for (Uint8 i = 0; i < 2; i++)
 	{
@@ -45,9 +46,17 @@ void GameInit(Game& self, const char* p1, const char* p2, const char* map)
 		PlayerReboot(player, i == 1 ? -1 : 1);
 		player.hpBar = { realW * i, 0, 0, 50 };
 		player.staminaBar = { realW * i, 60, 0, 20 };
-		player.color = { (Uint8)(20 + 130 * !i), 20, (Uint8)(20 + 130 * i) };
+		
+		SDL_Color color = { (Uint8)(20 + 130 * !i), 20, (Uint8)(20 + 130 * i) };
+		player.marker.rect = { 0, 0, 18, 18 };
+		SDL_Surface *surf = SDL_CreateRGBSurface(0, 18, 18, 32, 0, 0, 0, 0);
+		SDL_Rect drawRect = { 0, 0, 18, 18 };
+		SDL_FillRect(surf, &drawRect, SDL_MapRGBA(surf->format, 20, 20, 20, 255));
+		drawRect = { 2, 2, 14, 14 };
+		SDL_FillRect(surf, &drawRect, SDL_MapRGBA(surf->format, color.r, color.g, color.b, 255));
+		player.marker.texture = SDL_CreateTextureFromSurface(ren, surf);
+		SDL_FreeSurface(surf);
 	}
-	MapLoad(self.map, map);
 }
 
 void GameLoadControls(Game& self)
@@ -97,7 +106,9 @@ void GameRestart(Game& self, bool clearScores)
 	for (Uint8 i = 0; i < 2; i++)
 	{
 		PlayerReboot(self.players[i], i == 1 ? -1 : 1);
-		EntityMoveTo(self.players[i].ent, {(1.0f + 2.0f * i) * realW / 4.0f, realH / 5.0f });
+		Entity& p = self.players[i].ent;
+		SDL_FPoint& pos = i == 0 ? self.map.p1Pos : self.map.p2Pos;
+		EntityMoveTo(p, { pos.x - p.rect.w / 2, pos.y - p.rect.h });
 	}
 	for (int i = 0; i < self.map.bonusesCount; i++)
 	{
@@ -107,7 +118,11 @@ void GameRestart(Game& self, bool clearScores)
 	ListClear(self.vanishTexts);
 
 	if (clearScores)
+	{
 		self.playersWins[0] = self.playersWins[1] = 0;
+		self.restartingRound = false;
+		self.currRCountdown = 0;
+	}
 }
 
 void GameHandleArenaCollisions(Game& self)
@@ -119,11 +134,12 @@ void GameHandleArenaCollisions(Game& self)
 		for (int i = 0; i < self.map.platformsCount; i++)
 		{
 			Platform& platform = self.map.platforms[i];
-			if (SDL_HasIntersection(&player.plungeRect, &platform.rect))
+			if (SDL_HasIntersection(&player.plungeRect, &platform.rect) && !(player.status & ISDISMOUNTING))
 				player.status &= ~CANPLUNGE;
-			PlayerPlatformVerCollision(player, platform);
 			PlayerPlatformHorCollision(player, platform);
 		}
+		for (int i = 0; i < self.map.platformsCount; i++)
+			PlayerPlatformVerCollision(player, self.map.platforms[i]);
 	}
 }
 
@@ -134,9 +150,9 @@ int GameRoundEndCheck(Game& self)
 	if (self.currTime == 0)
 	{
 		self.currRCountdown = self.roundRestartCountdown;
-		if (self.players[0].currHP < self.players[1].currHP)
+		if (self.players[0].hpBar.w < -self.players[1].hpBar.w)
 			return 2;
-		if (self.players[0].currHP > self.players[1].currHP)
+		if (self.players[0].hpBar.w > -self.players[1].hpBar.w)
 			return 1;
 		return 0;
 	}
@@ -154,16 +170,22 @@ void GameRoundEndInvoke(Game& self, int i)
 {
 	self.currRCountdown = self.roundRestartCountdown;
 	self.restartingRound = true;
-	char msg[14];
+	char msg[26];
 	if (i == 0)
 		strcpy_s(msg, "DRAW");
 	else
 	{
-		self.playersWins[i - 1] += 1;
-		sprintf_s(msg, "PLAYER %i WINS", i);
+		self.playersWins[i - 1]++;
+		if (self.playersWins[i - 1] == self.roundsToWin)
+		{
+			sprintf_s(msg, "PLAYER %i WINS THE MATCH", i);
+			self.currRCountdown = 0;
+		}
+		else
+			sprintf_s(msg, "PLAYER %i WINS", i);
 	}
-	VanishText txt = VanishTextGenerate(msg, self.font, 90, { 230, 230, 230, 255 },
-		0, 0, self.currRCountdown, self.fontOutline);
+	VanishText txt = VanishTextGenerate(msg, self.font, 70, { 230, 230, 230, 255 },
+		0, 0, self.currRCountdown ? self.currRCountdown : -1, self.fontOutline);
 	VanishTextSetPos(txt, { realW / 2, realH / 2 });
 	ListAppend(self.vanishTexts, txt);
 }
@@ -190,7 +212,7 @@ void GameUpdateVisuals(Game& self, const Uint16& dt)
 		}
 		curr = ListNext(self.vanishTexts);
 	}
-
+	self.vanishTexts.curr = self.vanishTexts.head;
 }
 
 void GameUpdateTime(Game& self, const Uint16& dt)
@@ -296,8 +318,8 @@ void PlayersAttacksHandle(Game& self)
 
 Sint8 GameUpdate(Game& self, const Uint16& dt)
 {
-	//std::cout << self.players[0].currEvadeCD << "  " << self.players[0].currParrCD << "  " << self.players[0].currAtk->currCD <<
-	//	"  " << self.players[0].currStaminaCD << "  " << self.players[0].currAtk->currDur << "  " << self.players[0].currParrDur << '\n';
+	//std::cout << self.players[1].currEvadeCD << "  " << self.players[1].currParrCD << "  " << self.players[1].currAtk->currCD <<
+	//	"  " << self.players[1].currStaminaCD << "  " << self.players[1].currAtk->currDur << "  " << self.players[1].currParrDur << '\n';
 	if (OnKeyPress(SDL_SCANCODE_ESCAPE))
 		return TOMENU;
 	
@@ -359,8 +381,7 @@ void GameDraw(Game& self)
 	for (const Player* player : self.drawPriority)
 		if (player->dOrder == FOREGROUND)
 			PlayerDraw(*player);
-
-	
+		
 	MapDrawFG(self.map);
 
 	for (VLElem* curr = self.vanishTexts.curr; curr; curr = ListNext(self.vanishTexts))
@@ -368,10 +389,28 @@ void GameDraw(Game& self)
 		VanishTextDraw(curr->val);
 	}
 	
-	SDL_Rect drawRect;
-	int i = 0;
-	for (Player& player : self.players)
+	SDL_Rect drawRect = { 0, 100, 30, 30 };
+	SDL_SetRenderDrawColor(ren, 20, 20, 20, 255);
+	int spacing = drawRect.w / 3;
+	drawRect.x = (realW - drawRect.w) / 2 - (self.roundsToWin - 1) * (drawRect.w + spacing);
+	for (int j = 0; j < self.roundsToWin * 2 - 1; j++)
 	{
+		SDL_Rect rect = RectTransformForCurrWin(drawRect);
+		SDL_RenderFillRect(ren, &rect);
+		drawRect.x += spacing + drawRect.w;
+	}
+	for (int i = 0; i < 2; i++)
+	{
+		Player& player = self.players[i];
+		
+		drawRect = { 0, 100, 30, 30 };
+		for (int j = 0; j < self.playersWins[i]; j++)
+		{
+			drawRect.x = (realW - drawRect.w) / 2 + (i == 0 ? 1 : -1) * (drawRect.w + spacing) * (j - self.roundsToWin + 1);
+			SDL_Rect rect = RectTransformForCurrWin(drawRect);
+			SDL_RenderCopy(ren, player.marker.texture, NULL, &rect);
+		}
+		
 		SDL_SetRenderDrawColor(ren, 200, 50, 50, 255);
 		drawRect = RectTransformForCurrWin(player.hpBar);
 		SDL_RenderFillRect(ren, &drawRect);
@@ -388,7 +427,6 @@ void GameDraw(Game& self)
 				SDL_RenderCopy(ren, bonusesImages[GetBonusImageIndex(bonus)].texture, NULL, &drawRect);
 			}
 		}
-		i++;
 	}
 
 	drawRect = RectTransformForCurrWin(self.timer.rect);
