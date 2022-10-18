@@ -62,7 +62,7 @@ void GameInit(Game& self, const char* p1, const char* p2, const char* map)
 void GameLoadControls(Game& self)
 {
 	FILE* file;
-	if (fopen_s(&file, "data/controls.txt", "r"))
+	if (fopen_s(&file, "controls.txt", "r"))
 		exit(0);
 	char temp[40];
 	Uint8 playerN = SDL_MAX_UINT8;

@@ -229,8 +229,8 @@ void AboutMenuInit(Menu& self)
 	self.textsCount = 1;
 	self.texts = (Image*)malloc(sizeof(Image) * self.textsCount);
 	char text[] = "Hi, nothing here";
-	SDL_Surface* surf = TTF_RenderUTF8_Solid_Wrapped(font, text, { 200, 200, 200, 255 }, realW - 400);
-	self.texts[0].rect = { (realW - surf->w) / 2, (realH - surf->h) / 2 - 190, surf->w, surf->h };
+	SDL_Surface* surf = TTF_RenderUTF8_Solid_Wrapped(font, text, { 200, 200, 200, 255 }, realW - 300);
+	self.texts[0].rect = { (realW - surf->w) / 2, (realH - 190 - surf->h) / 2, surf->w, surf->h };
 	self.texts[0].texture = SDL_CreateTextureFromSurface(ren, surf);
 	SDL_FreeSurface(surf);
 	TTF_CloseFont(font);
