@@ -48,7 +48,10 @@ void DoubleDamageUpdate(Bonus& self, Uint16 dt)
 	{
 		self.currCD -= dt;
 		if (self.currCD <= 0)
+		{
 			self.currCD = 0;
+			self.isAvailable = true;
+		}
 		return;
 	}
 	self.player->currDmg *= 2;
@@ -57,7 +60,6 @@ void DoubleDamageUpdate(Bonus& self, Uint16 dt)
 	{
 		self.player->activeBonuses &= ~DOUBLE_DAMAGE;
 		self.player = NULL;
-		self.isAvailable = true;
 	}
 }
 
